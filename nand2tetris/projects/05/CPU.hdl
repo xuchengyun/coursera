@@ -38,6 +38,47 @@ CHIP CPU {
         addressM[15],    // Address in data memory (of M)
         pc[15];          // address of next instruction
 
+    // 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
+    // i  1  1  a  c1 c2 c3 c4 c5 c6 d1 d2 d3 j1 j2 j3
     PARTS:
-    // Put your code here:
+    // Decode instruction
+    And(a=instruction[15], b=true, out=cInstruction);
+    Not(in=cInstruction, out=aInstruction);
+
+    // Calculate loadA and ARegister
+    And(a=cInstruction, b=instruction[5], out=writeC);
+    Or(a=aInstruction, b=writeC, out=loadA);
+    Mux16(a=instruction, b=outALU, sel=cInstruction, out=mux1);
+    ARegister(in=mux1, load=loadA, out=outA, out[0..14]=addressM);
+
+    // Calculate loadD and DRegister
+    And(a=cInstruction, b=instruction[4], out=loadD);
+    DRegister(in=outALU, load=loadD, out=outD);
+
+    Mux16(a=outA, b=inM, sel=instruction[12], out=mux2);
+
+    // Calculate for ALU
+    ALU(x=outD, y=mux2, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outALU, out=outM, zr=zr, ng=ng);
+
+    // Calculate for ALU output is positive
+    Not(in=zr, out=notZr);
+    Not(in=ng, out=notNg);
+    And(a=notZr, b=notNg, out=ps);
+
+    // Calculate loadPC and PC
+    And(a=instruction[1], b=zr, out=zrJump);
+    And(a=instruction[2], b=ng, out=ngJump);
+    And(a=instruction[0], b=ps, out=psJump);
+
+    And(a=cInstruction, b=zrJump, out=zrJump1);
+    And(a=cInstruction, b=ngJump, out=ngJump1);
+    And(a=cInstruction, b=psJump, out=psJump1);
+
+    Or(a=zrJump1, b=ngJump1, out=zrOrNgJump);
+    Or(a=zrOrNgJump, b=psJump1, out=loadPC);
+    PC(in=outA, load=loadPC, inc=true, reset=reset, out[0..14]=pc);
+
+    // Calculate writeM
+    And(a=cInstruction, b=instruction[3], out=writeM);
+
 }
