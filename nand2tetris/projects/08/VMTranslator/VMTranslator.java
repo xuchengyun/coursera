@@ -18,9 +18,9 @@ public class VMTranslator {
         if (file.isDirectory()) {
             File[] listOfFiles = file.listFiles();
             assert (listOfFiles != null);
-            for (int i = 0; i < listOfFiles.length; i++) {
-                if (listOfFiles[i].isFile() && listOfFiles[i].getPath().endsWith(".vm")) {
-                    parse(listOfFiles[i].getName(), listOfFiles[i].getPath());
+            for (File listOfFile : listOfFiles) {
+                if (listOfFile.isFile() && listOfFile.getPath().endsWith(".vm")) {
+                    parse(listOfFile.getName(), listOfFile.getPath());
                 }
             }
         } else {
@@ -46,7 +46,21 @@ public class VMTranslator {
                     case C_POP: 
                         writer.writePushPop(parser.command);
                         break;
-                    
+                    case C_LABEL:
+                        writer.writeLabel(parser.command);
+                        break;
+                    case C_GOTO:
+                        writer.writeGoto(parser.command);
+                        break;
+                    case C_IF:
+                        writer.writeIf(parser.command);
+                        break;
+                    case C_FUNCTION:
+                        writer.writeFunction(parser.command);
+                        break;
+                    case C_CALL:
+                        writer.writeCall(parser.command);
+                        break;
                 }
             }
         } catch (IOException e) {

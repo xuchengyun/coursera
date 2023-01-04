@@ -45,6 +45,45 @@ public class CodeWriter {
         }
     }
 
+    public void writeInit() {
+
+    }
+
+    // label test
+    public void writeLabel(Command command) throws IOException {
+        writeWithNewLine("// " + command.command);
+        writeWithNewLine("(" + command.arg1 + ")");
+    }
+
+    // goto label
+    public void writeGoto(Command command) throws IOException {
+        writeWithNewLine("// " + command.command);
+        writeWithNewLine("@" + command.arg1);
+        writeWithNewLine("0;JMP");
+    }
+
+    // if-goto label
+    public void writeIf(Command command) throws IOException {
+        writeWithNewLine("// " + command.command);
+        writeWithNewLine("@SP");
+        writeWithNewLine("AM=M-1");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@" + command.arg1);
+        writeWithNewLine("D;JNE");
+    }
+
+    public void writeCall(Command command) {
+
+    }
+
+    public void writeReturn() {
+
+    }
+
+    public void writeFunction(Command command) {
+
+    }
+
     // add
     private void writeAdd() throws IOException {
         writeWithNewLine("// add");

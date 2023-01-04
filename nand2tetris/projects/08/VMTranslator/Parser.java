@@ -54,20 +54,40 @@ public class Parser {
     }
 
     private Command generateCommand(String line) throws VMSyntaxException {
-        if (isArithmetic(line)) {
-            return new Command(line, CommandType.C_ARITHMETIC, "", 0);
-        }
-
+        assert line != null;
         String[] parts = line.split(" ");
-        if (parts.length != 3 || !isPopPush(parts[0]) || !isSegments(parts[1]) || !isInteger(parts[2])) {
-            throw new VMSyntaxException("Assembler.Command " + line + " is illegal");
-        }
-        if ("push".equals(parts[0])) {
-            return new Command(line, CommandType.C_PUSH, parts[1], Integer.parseInt(parts[2]));
-        } else if ("pop".equals(parts[0])) {
-            return new Command(line, CommandType.C_POP, parts[1], Integer.parseInt(parts[2]));
+        if (parts.length == 1) {
+            if (isArithmetic(line)) {
+                return new Command(line, CommandType.C_ARITHMETIC, "", 0);
+            }  else if ("return".equals(line)) {
+                return new Command(line, CommandType.C_RETURN, "", 0);
+            } else {
+                throw new VMSyntaxException("Assembler.Command " + line + " is illegal");
+            }
+        } else if (parts.length == 2) {
+            if ("label".equals(parts[0])) {
+                return new Command(line, CommandType.C_LABEL, parts[1], 0);
+            } else if ("if-goto".equals(parts[0])) {
+                return new Command(line, CommandType.C_IF, parts[1], 0);
+            } else if ("goto".equals(parts[0])) {
+                return new Command(line, CommandType.C_GOTO, parts[1], 0);
+            } else {
+                throw new VMSyntaxException("Assembler.Command " + line + " is illegal");
+            }
+        } else if (parts.length == 3 && isInteger(parts[2])) {
+            if ("push".equals(parts[0])) {
+                return new Command(line, CommandType.C_PUSH, parts[1], Integer.parseInt(parts[2]));
+            } else if ("pop".equals(parts[0])) {
+                return new Command(line, CommandType.C_POP, parts[1], Integer.parseInt(parts[2]));
+            } else if ("function".equals(parts[0])) {
+                return new Command(line, CommandType.C_FUNCTION, parts[1], Integer.parseInt(parts[2]));
+            } else if ("call".equals(parts[0])) {
+                return new Command(line, CommandType.C_CALL, parts[1], Integer.parseInt(parts[2]));
+            } else {
+                throw new VMSyntaxException("Assembler.Command " + line + " is illegal");
+            }
         } else {
-            throw new VMSyntaxException("");
+            throw new VMSyntaxException("Assembler.Command " + line + " is illegal");
         }
     }
 
