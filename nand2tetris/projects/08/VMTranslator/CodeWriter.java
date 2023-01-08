@@ -1,6 +1,8 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Stack;
 
 public class CodeWriter {
 
@@ -10,6 +12,8 @@ public class CodeWriter {
     int gtNum;
     int ltNum;
 
+    Stack<String> functionNames = new Stack<>();
+
     public CodeWriter(String outputFilePath, String fileName) throws IOException {
         this.fileName = fileName;
         this.eqNum = 0;
@@ -17,6 +21,10 @@ public class CodeWriter {
         this.ltNum = 0;
 //        this.temp = 5; // Initialize temp base address to 5
         writer = new BufferedWriter(new FileWriter(outputFilePath));
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     public void writeArithmetic(Command command) throws IOException {
@@ -52,13 +60,13 @@ public class CodeWriter {
     // label test
     public void writeLabel(Command command) throws IOException {
         writeWithNewLine("// " + command.command);
-        writeWithNewLine("(" + command.arg1 + ")");
+        writeWithNewLine(getFullLabel(command.arg1));
     }
 
     // goto label
     public void writeGoto(Command command) throws IOException {
         writeWithNewLine("// " + command.command);
-        writeWithNewLine("@" + command.arg1);
+        writeWithNewLine(getFullLabel(command.arg1));
         writeWithNewLine("0;JMP");
     }
 
@@ -68,8 +76,13 @@ public class CodeWriter {
         writeWithNewLine("@SP");
         writeWithNewLine("AM=M-1");
         writeWithNewLine("D=M");
-        writeWithNewLine("@" + command.arg1);
+        writeWithNewLine("@" + getFullLabel(command.arg1));
         writeWithNewLine("D;JNE");
+    }
+
+    private String getFullLabel(String label) {
+        String functionName = functionNames.isEmpty() ? "" : functionNames.peek();
+        return "(" + fileName + "." + functionName + "$" + label + ")";
     }
 
     public void writeCall(Command command) {
