@@ -19,9 +19,10 @@ public class VMTranslator {
 
     private static void process(File file) throws VMSyntaxException, IOException {
         try {
-            writer = new CodeWriter(file.getPath().substring(0, file.getPath().indexOf('.')) + ".asm", "");
-            writer.writeInit();
+            String outputFile = file.getPath().substring(0, file.getPath().indexOf('.')) + ".asm";
+            writer = new CodeWriter(outputFile, "");
             if (file.isDirectory()) {
+                writer.writeInit();
                 File[] listOfFiles = file.listFiles();
                 assert (listOfFiles != null);
                 for (File listOfFile : listOfFiles) {
@@ -32,6 +33,8 @@ public class VMTranslator {
             } else {
                 parse(file.getName(), file.getPath());
             }
+        } catch (IOException | VMSyntaxException e) {
+            e.printStackTrace();
         } finally {
             try {
                 parser.close();

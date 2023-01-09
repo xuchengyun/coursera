@@ -1,7 +1,6 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.Stack;
 
 public class CodeWriter {
@@ -19,7 +18,7 @@ public class CodeWriter {
         this.eqNum = 0;
         this.gtNum = 0;
         this.ltNum = 0;
-//        this.temp = 5; // Initialize temp base address to 5
+//      this.temp = 5; // Initialize temp base address to 5
         writer = new BufferedWriter(new FileWriter(outputFilePath));
     }
 
@@ -53,20 +52,24 @@ public class CodeWriter {
         }
     }
 
-    public void writeInit() {
-
+    // init
+    public void writeInit() throws IOException {
+        writeWithNewLine("// init");
+        writeWithNewLine("@SP");
+        writeWithNewLine("M=256");
+        writeCall(new Command("call Sys.init 0", CommandType.C_CALL, "Sys.init", 0));
     }
 
     // label test
     public void writeLabel(Command command) throws IOException {
         writeWithNewLine("// " + command.command);
-        writeWithNewLine(getFullLabel(command.arg1));
+        writeWithNewLine("(" + getFullLabel(command.arg1) + ")");
     }
 
     // goto label
     public void writeGoto(Command command) throws IOException {
         writeWithNewLine("// " + command.command);
-        writeWithNewLine(getFullLabel(command.arg1));
+        writeWithNewLine("@" + getFullLabel(command.arg1));
         writeWithNewLine("0;JMP");
     }
 
@@ -82,7 +85,7 @@ public class CodeWriter {
 
     private String getFullLabel(String label) {
         String functionName = functionNames.isEmpty() ? "" : functionNames.peek();
-        return "(" + fileName + "." + functionName + "$" + label + ")";
+        return fileName + "." + functionName + "$" + label;
     }
 
     public void writeCall(Command command) {
