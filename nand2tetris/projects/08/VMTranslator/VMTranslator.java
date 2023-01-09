@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class VMTranslator {
     private static Parser parser;
@@ -17,14 +18,19 @@ public class VMTranslator {
         process(file);
     }
 
-    private static void process(File file) throws VMSyntaxException, IOException {
+    private static void process(File file) {
         try {
-            String outputFile = file.getPath().substring(0, file.getPath().indexOf('.')) + ".asm";
+            String path = file.getPath();
+            String outputFile = path.contains(".vm") ?
+                    file.getPath().substring(0, file.getPath().indexOf('.')) + ".asm"
+                    : path + File.separator + path + ".asm";
             writer = new CodeWriter(outputFile, "");
             if (file.isDirectory()) {
-                writer.writeInit();
                 File[] listOfFiles = file.listFiles();
                 assert (listOfFiles != null);
+                if (Arrays.stream(listOfFiles).anyMatch(x -> x.getName().equals("Sys.vm"))) {
+                    writer.writeInit();
+                }
                 for (File listOfFile : listOfFiles) {
                     if (listOfFile.isFile() && listOfFile.getPath().endsWith(".vm")) {
                         parse(listOfFile.getName(), listOfFile.getPath());
@@ -33,7 +39,7 @@ public class VMTranslator {
             } else {
                 parse(file.getName(), file.getPath());
             }
-        } catch (IOException | VMSyntaxException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {

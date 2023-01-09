@@ -1,6 +1,8 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 public class CodeWriter {
@@ -11,13 +13,16 @@ public class CodeWriter {
     int gtNum;
     int ltNum;
 
-    Stack<String> functionNames = new Stack<>();
+    String functionName;
+    int callNum;
 
     public CodeWriter(String outputFilePath, String fileName) throws IOException {
         this.fileName = fileName;
         this.eqNum = 0;
         this.gtNum = 0;
         this.ltNum = 0;
+        this.callNum = 0;
+        this.functionName = "";
 //      this.temp = 5; // Initialize temp base address to 5
         writer = new BufferedWriter(new FileWriter(outputFilePath));
     }
@@ -26,37 +31,79 @@ public class CodeWriter {
         this.fileName = fileName;
     }
 
+    public void setFunctionName(String functionName) {
+        this.functionName = functionName;
+    }
+
+
     public void writeArithmetic(Command command) throws IOException {
         switch (command.command) {
-            case "add": writeAdd(); break;
-            case "sub": writeSub(); break;
-            case "neg": writeNeg(); break;
-            case "eq": writeEq(); break;
-            case "gt": writeGt(); break;
-            case "lt": writeLt(); break;
-            case "and": writeAnd(); break;
-            case "or": writeOr(); break;
-            case "not": writeNot(); break;
+            case "add":
+                writeAdd();
+                break;
+            case "sub":
+                writeSub();
+                break;
+            case "neg":
+                writeNeg();
+                break;
+            case "eq":
+                writeEq();
+                break;
+            case "gt":
+                writeGt();
+                break;
+            case "lt":
+                writeLt();
+                break;
+            case "and":
+                writeAnd();
+                break;
+            case "or":
+                writeOr();
+                break;
+            case "not":
+                writeNot();
+                break;
         }
     }
+
     public void writePushPop(Command command) throws VMSyntaxException, IOException {
         switch (command.arg1) {
-            case "argument": writeArgument(command); break;
-            case "local": writeLocal(command); break;
-            case "static": writeStatic(command); break;
-            case "constant": writeConstant(command); break;
-            case "this": writeThis(command); break;
-            case "that": writeThat(command); break;
-            case "pointer": writePointer(command); break;
-            case "temp": writeTemp(command); break;
+            case "argument":
+                writeArgument(command);
+                break;
+            case "local":
+                writeLocal(command);
+                break;
+            case "static":
+                writeStatic(command);
+                break;
+            case "constant":
+                writeConstant(command);
+                break;
+            case "this":
+                writeThis(command);
+                break;
+            case "that":
+                writeThat(command);
+                break;
+            case "pointer":
+                writePointer(command);
+                break;
+            case "temp":
+                writeTemp(command);
+                break;
         }
     }
 
     // init
     public void writeInit() throws IOException {
         writeWithNewLine("// init");
+        writeWithNewLine("@256");
+        writeWithNewLine("D=A");
         writeWithNewLine("@SP");
-        writeWithNewLine("M=256");
+        writeWithNewLine("M=D");
         writeCall(new Command("call Sys.init 0", CommandType.C_CALL, "Sys.init", 0));
     }
 
@@ -84,20 +131,151 @@ public class CodeWriter {
     }
 
     private String getFullLabel(String label) {
-        String functionName = functionNames.isEmpty() ? "" : functionNames.peek();
-        return fileName + "." + functionName + "$" + label;
+        return functionName + "$" + label;
     }
 
-    public void writeCall(Command command) {
+    // call functionName nArgs
+    public void writeCall(Command command) throws IOException {
+        writeWithNewLine("//" + command.command);
 
+        String retAddr = command.arg1 + "$ret" + callNum++;
+        // push returnAddress
+        writeWithNewLine("@" + retAddr);
+        writeWithNewLine("D=A");
+        writeWithNewLine("@SP");
+        writeWithNewLine("A=M");
+        writeWithNewLine("M=D");
+        writeWithNewLine("@SP");
+        writeWithNewLine("M=M+1");
+
+        List<String> l = new ArrayList<>();
+        l.add("LCL");
+        l.add("ARG");
+        l.add("THIS");
+        l.add("THAT");
+        for (String arg : l) {
+            writeCallPushTemplate(arg);
+        }
+
+        // Repositions ARG
+        writeWithNewLine("@SP");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@5");
+        writeWithNewLine("D=D-A");
+        writeWithNewLine("@" + command.arg2);
+        writeWithNewLine("D=D-A");
+        writeWithNewLine("@ARG");
+        writeWithNewLine("M=D");
+
+        // Repositions LCL
+        writeWithNewLine("@SP");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@LCL");
+        writeWithNewLine("M=D");
+
+        // goto functionName
+        writeWithNewLine("@" + command.arg1);
+        writeWithNewLine("0;JMP");
+
+        //(returnAddress)
+        writeWithNewLine("(" + retAddr + ")");
     }
 
-    public void writeReturn() {
-
+    private void writeCallPushTemplate(String arg) throws IOException {
+        writeWithNewLine("@" + arg);
+        writeWithNewLine("D=M");
+        writeWithNewLine("@SP");
+        writeWithNewLine("A=M");
+        writeWithNewLine("M=D");
+        writeWithNewLine("@SP");
+        writeWithNewLine("M=M+1");
     }
 
-    public void writeFunction(Command command) {
+    // return
+    public void writeReturn() throws IOException {
+        writeWithNewLine("// return");
+        // 1. R13 <--- endFrame = LCL
+        writeWithNewLine("@LCL");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@R13");
+        writeWithNewLine("M=D");
 
+        // 2. R14 <--- retAddr = *(endFrame - 5)
+        writeWithNewLine("@R13");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@5");
+        writeWithNewLine("A=D-A");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@R14");
+        writeWithNewLine("M=D");
+
+        // 3. *ARG = pop()
+        writeWithNewLine("@SP");
+        writeWithNewLine("A=M-1");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@ARG");
+        writeWithNewLine("A=M");
+        writeWithNewLine("M=D");
+
+        // 4. SP = ARG + 1
+        writeWithNewLine("@ARG");
+        writeWithNewLine("D=M+1");
+        writeWithNewLine("@SP");
+        writeWithNewLine("M=D");
+
+        // 5. THAT = *(endFrame - 1)
+        writeWithNewLine("@R13");
+        writeWithNewLine("A=M-1");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@THAT");
+        writeWithNewLine("M=D");
+
+        // 6. THIS = *(endFrame - 2)
+        writeWithNewLine("@R13");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@2");
+        writeWithNewLine("A=D-A");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@THIS");
+        writeWithNewLine("M=D");
+
+        // 7. ARG = *(endFrame - 3)
+        writeWithNewLine("@R13");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@3");
+        writeWithNewLine("A=D-A");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@ARG");
+        writeWithNewLine("M=D");
+
+        // 8. LCL = *(endFrame - 4)
+        writeWithNewLine("@R13");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@4");
+        writeWithNewLine("A=D-A");
+        writeWithNewLine("D=M");
+        writeWithNewLine("@LCL");
+        writeWithNewLine("M=D");
+
+        // 9. goto RET
+        writeWithNewLine("@R14");
+        writeWithNewLine("A=M");
+        writeWithNewLine("0;JMP");
+    }
+
+
+    // function SimpleFunction.test 2
+    public void writeFunction(Command command) throws IOException {
+        setFunctionName(command.arg1);
+        writeWithNewLine("//" + command.command);
+        writeWithNewLine("(" + functionName + ")");
+        for (int i = 0; i < command.arg2; i++) {
+            writeWithNewLine("@SP");
+            writeWithNewLine("A=M");
+            writeWithNewLine("M=0");
+            writeWithNewLine("@SP");
+            writeWithNewLine("M=M+1");
+        }
     }
 
     // add
@@ -181,7 +359,7 @@ public class CodeWriter {
         writeWithNewLine("D=M-D");
         writeWithNewLine("M=-1");
         writeWithNewLine("@" + "LT_" + ltNum);
-        writeWithNewLine("D; JLT");
+        writeWithNewLine("D;JLT");
         writeWithNewLine("@SP");
         writeWithNewLine("A=M-1");
         writeWithNewLine("M=0");
