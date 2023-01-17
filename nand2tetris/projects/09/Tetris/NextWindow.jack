@@ -1,0 +1,57 @@
+/**
+ * Represents the right subwindow that displays the "next block"
+*/
+
+class NextWindow {
+  static int disp_x0, disp_y0, disp_x1, disp_y1; // for next block window (TODO: might remove and hard code later on)
+  static int block_size, block_space;
+
+  function void init() {
+//    var int i, j;
+
+    let block_size = 12;
+    let block_space = 3;
+
+    let disp_x0 = 392;
+    let disp_y0 = 82;
+    let disp_x1 = disp_x0 + (12*4) + (4* 2) - block_space;
+    let disp_y1 = disp_y0 + (12*2) + (16 * 2) - block_space;
+
+    do Screen.drawRectangle(disp_x0, disp_y0, disp_x1, disp_y1);
+    do Screen.setColor(false);
+    do Screen.drawRectangle(disp_x0 + 2, disp_y0 + 2, disp_x1 - 2, disp_y1 - 2);
+    do Screen.setColor(true);
+
+    return;
+  }
+
+  /** draw a block within the "next" window */
+  // TODO: might be removed completely to accept only block patterns. Or, will be moved to a separate class */
+  function void drawCell(int i, int j, boolean three_column) {
+    var int x, y;
+    var int offset_x, offset_y;
+
+    if (three_column) {
+      let offset_x = 4 + (block_size/2);
+    } else {
+      let offset_x = 4;
+    }
+    let offset_y = 16;
+
+    let x = disp_x0 + (i * block_size) + offset_x;
+    let y = disp_y0 + (j * block_size) + offset_y;
+
+    do Screen.drawRectangle(x, y, x + block_size - block_space, y + block_size - block_space);
+    return;
+  }
+
+  /** clear the next window */
+  function void clear() {
+    do Screen.setColor(false);
+    do Screen.drawRectangle(disp_x0 + 2, disp_y0 + 2, disp_x1 - 2, disp_y1 - 2);
+    do Screen.setColor(true);
+
+    return;
+  }
+}
+

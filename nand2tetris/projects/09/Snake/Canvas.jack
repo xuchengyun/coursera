@@ -1,0 +1,75 @@
+class Canvas {
+
+    static int border;
+    static int x0, y0, x1, y1; // main window
+    static int score_x0, score_y0, score_x1, score_y1; // score board
+
+    function void init() {
+        let border = 8;
+        let x0 = 0;
+        let x1 = 399;
+        let y0 = 0;
+        let y1 = 255;
+
+        let score_x0 = x1;
+        let score_x1 = 511;
+        let score_y0 = 0;
+        let score_y1 = 255;
+
+        do Screen.clearScreen();
+        do Canvas.drawMainCanvas();
+        do Canvas.drawScoreBoard();
+        do Canvas.printScore(0);
+
+        return;
+    }
+
+    function void drawMainCanvas() {
+        do Screen.drawRectangle(x0, y0, x1, y1);
+        do Canvas.clearBox(x0, y0, x1, y1);
+        return;
+    }
+
+    function void clearBox(int x0, int y0, int x1, int y1) {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x0 + border,  y0 + border, x1 - border, y1 - border);
+        do Screen.setColor(true);
+                // do Screen.drawRectangle(8, 8, 16, 16);
+        return;
+    }
+
+    function void drawScoreBoard() {
+        do Screen.drawRectangle(score_x0, score_y0, score_x1, score_y1);
+        do Canvas.clearBox(score_x0, score_y0, score_x1, score_y1);
+        do Output.moveCursor(3, 52);
+        do Output.printString("Keep");
+        do Output.moveCursor(4, 52);
+        do Output.printString("Pressing");
+        do Output.moveCursor(5, 52);
+        do Output.printString("to speed up");
+        do Output.moveCursor(10, 53);
+        do Output.printString("Score:");
+        return;
+    }
+
+
+    function void drawEnd(int score) {
+        do Screen.clearScreen();
+        do Output.moveCursor(7,17);
+        do Output.printString("Game Over!");
+        do Output.moveCursor(9,17);
+        do Output.printString("Your final score is: ");
+        do Output.moveCursor(9, 38);
+        do Output.printInt(score);
+        do Output.moveCursor(13, 17);
+        do Output.printString("Press [R] to restart");
+        return;
+    }
+
+    function void printScore(int score) {
+        do Output.moveCursor(10, 59);
+        do Output.printInt(score);
+        return;
+    }
+
+}

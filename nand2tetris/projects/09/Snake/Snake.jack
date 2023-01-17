@@ -1,0 +1,155 @@
+/*
+A list of nodes
+*/
+class Snake {
+    field int length;
+    field Node head;
+    field Node tail;
+    field Node nexthead;
+    field Node inde;
+
+    constructor Snake new(int len){
+        var int i;
+        var Node temp;
+
+        let length = len;
+        
+        let head = Node.new(12,8);
+        do head.drawNode();
+        do head.setNext(null);
+
+        let temp = head;
+        let i = 1;
+        while ( i < length ) {
+            let tail = Node.new(12, 8 + i);
+            do tail.setNext(temp);
+            do temp.setPrev(tail);
+            let temp = tail;
+            let i = i + 1;
+            do tail.drawNode();
+        }
+        return this;
+    }
+
+    method void move(int direction){
+        if (direction = 0 | SnakeGame.getExit()) { return; }
+        if (direction = 1) { let nexthead = Node.new(head.getX(), head.getY() - 1);} // up
+        if (direction = 2) { let nexthead = Node.new(head.getX(), head.getY() + 1);} // down
+        if (direction = 3) { let nexthead = Node.new(head.getX() - 1, head.getY());} // left
+        if (direction = 4) { let nexthead = Node.new(head.getX() + 1, head.getY());} // right
+        
+        if (isNextFood()) {
+            do eat();
+        }else{
+            do moveNext();
+            do checkExit();
+        }
+        return;
+    }
+
+    method void checkExit() {
+        if (checkMeetSelf()) {
+            return;
+        }
+        do checkMeetWall();
+        return;
+    }
+
+    method boolean isNextFood(){
+        var Node food;
+        let food = SnakeGame.getFood();
+        if((nexthead.getX()=food.getX()) & (nexthead.getY()=food.getY())){
+            return true;
+        }
+        return false;
+    }
+
+    method void eat() {
+        var Node food;
+        do addHead();
+        do SnakeGame.addScore();
+        let food = SnakeGame.getFood(); 
+        do food.dispose();
+        do SnakeGame.createFood();
+        return;
+    }
+
+    method void moveNext() {
+        do removeTail();
+        do addHead();
+        return;
+    }
+
+    method void addHead() {
+        do head.setNext(nexthead);
+        do nexthead.setPrev(head);
+        let head = nexthead;
+        do head.setNext(null);
+        do head.drawNode();
+        return;
+    }
+
+    method void removeTail() {
+        var Node temp;
+        let temp = tail;
+        let tail = tail.getNext();
+        do temp.clearNode();
+        do temp.dispose();
+        do tail.setPrev(null);
+        return;
+    }
+
+
+    method boolean checkMeetSelf() {
+        if (isMeetSelf()) {
+            do SnakeGame.setExit(true);
+            return true;
+        }
+        return false;
+    }
+
+    method boolean isMeetSelf() {
+        var Node temp;
+        let temp = head.getPrev();
+        while(~(temp = null)) {
+            if((head.getX() = temp.getX()) & (head.getY() = temp.getY())){
+                return true;
+            }
+            let temp = temp.getPrev();
+        }
+        return false;
+    }
+
+
+    method boolean checkMeetWall(){
+        if (isMeetWall()) {
+            do SnakeGame.setExit(true);
+            return true;
+        }
+        return false;
+    }
+
+    method boolean isMeetWall() {
+        var int x;
+        var int y;
+        let x = head.getX();
+        let y = head.getY();
+        return (x < 0) | (x > 47) | (y < 0) | (y > 29);
+    }
+
+
+    method boolean getHead(){
+        return head;
+    }
+
+    method void dispose() {
+        var Node prev;
+        let prev = head.getPrev();
+        if (~(prev = null)) {
+            do prev.dispose();
+        }
+        do head.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+}

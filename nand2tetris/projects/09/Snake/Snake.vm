@@ -1,0 +1,387 @@
+function Snake.new 2
+push constant 5
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push constant 12
+push constant 8
+call Node.new 2
+pop this 1
+push this 1
+call Node.drawNode 1
+pop temp 0
+push this 1
+push constant 0
+call Node.setNext 2
+pop temp 0
+push this 1
+pop local 1
+push constant 1
+pop local 0
+label WHILE_EXP0
+push local 0
+push this 0
+lt
+not
+if-goto WHILE_END0
+push constant 12
+push constant 8
+push local 0
+add
+call Node.new 2
+pop this 2
+push this 2
+push local 1
+call Node.setNext 2
+pop temp 0
+push local 1
+push this 2
+call Node.setPrev 2
+pop temp 0
+push this 2
+pop local 1
+push local 0
+push constant 1
+add
+pop local 0
+push this 2
+call Node.drawNode 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push pointer 0
+return
+function Snake.move 0
+push argument 0
+pop pointer 0
+push argument 1
+push constant 0
+eq
+call SnakeGame.getExit 0
+or
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push argument 1
+push constant 1
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 1
+call Node.getX 1
+push this 1
+call Node.getY 1
+push constant 1
+sub
+call Node.new 2
+pop this 3
+label IF_FALSE1
+push argument 1
+push constant 2
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push this 1
+call Node.getX 1
+push this 1
+call Node.getY 1
+push constant 1
+add
+call Node.new 2
+pop this 3
+label IF_FALSE2
+push argument 1
+push constant 3
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push this 1
+call Node.getX 1
+push constant 1
+sub
+push this 1
+call Node.getY 1
+call Node.new 2
+pop this 3
+label IF_FALSE3
+push argument 1
+push constant 4
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push this 1
+call Node.getX 1
+push constant 1
+add
+push this 1
+call Node.getY 1
+call Node.new 2
+pop this 3
+label IF_FALSE4
+push pointer 0
+call Snake.isNextFood 1
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push pointer 0
+call Snake.eat 1
+pop temp 0
+goto IF_END5
+label IF_FALSE5
+push pointer 0
+call Snake.moveNext 1
+pop temp 0
+push pointer 0
+call Snake.checkExit 1
+pop temp 0
+label IF_END5
+push constant 0
+return
+function Snake.checkExit 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Snake.checkMeetSelf 1
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push pointer 0
+call Snake.checkMeetWall 1
+pop temp 0
+push constant 0
+return
+function Snake.isNextFood 1
+push argument 0
+pop pointer 0
+call SnakeGame.getFood 0
+pop local 0
+push this 3
+call Node.getX 1
+push local 0
+call Node.getX 1
+eq
+push this 3
+call Node.getY 1
+push local 0
+call Node.getY 1
+eq
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+return
+label IF_FALSE0
+push constant 0
+return
+function Snake.eat 1
+push argument 0
+pop pointer 0
+push pointer 0
+call Snake.addHead 1
+pop temp 0
+call SnakeGame.addScore 0
+pop temp 0
+call SnakeGame.getFood 0
+pop local 0
+push local 0
+call Node.dispose 1
+pop temp 0
+call SnakeGame.createFood 0
+pop temp 0
+push constant 0
+return
+function Snake.moveNext 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Snake.removeTail 1
+pop temp 0
+push pointer 0
+call Snake.addHead 1
+pop temp 0
+push constant 0
+return
+function Snake.addHead 0
+push argument 0
+pop pointer 0
+push this 1
+push this 3
+call Node.setNext 2
+pop temp 0
+push this 3
+push this 1
+call Node.setPrev 2
+pop temp 0
+push this 3
+pop this 1
+push this 1
+push constant 0
+call Node.setNext 2
+pop temp 0
+push this 1
+call Node.drawNode 1
+pop temp 0
+push constant 0
+return
+function Snake.removeTail 1
+push argument 0
+pop pointer 0
+push this 2
+pop local 0
+push this 2
+call Node.getNext 1
+pop this 2
+push local 0
+call Node.clearNode 1
+pop temp 0
+push local 0
+call Node.dispose 1
+pop temp 0
+push this 2
+push constant 0
+call Node.setPrev 2
+pop temp 0
+push constant 0
+return
+function Snake.checkMeetSelf 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Snake.isMeetSelf 1
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+call SnakeGame.setExit 1
+pop temp 0
+push constant 0
+not
+return
+label IF_FALSE0
+push constant 0
+return
+function Snake.isMeetSelf 1
+push argument 0
+pop pointer 0
+push this 1
+call Node.getPrev 1
+pop local 0
+label WHILE_EXP0
+push local 0
+push constant 0
+eq
+not
+not
+if-goto WHILE_END0
+push this 1
+call Node.getX 1
+push local 0
+call Node.getX 1
+eq
+push this 1
+call Node.getY 1
+push local 0
+call Node.getY 1
+eq
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+return
+label IF_FALSE0
+push local 0
+call Node.getPrev 1
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function Snake.checkMeetWall 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Snake.isMeetWall 1
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+call SnakeGame.setExit 1
+pop temp 0
+push constant 0
+not
+return
+label IF_FALSE0
+push constant 0
+return
+function Snake.isMeetWall 2
+push argument 0
+pop pointer 0
+push this 1
+call Node.getX 1
+pop local 0
+push this 1
+call Node.getY 1
+pop local 1
+push local 0
+push constant 0
+lt
+push local 0
+push constant 47
+gt
+or
+push local 1
+push constant 0
+lt
+or
+push local 1
+push constant 29
+gt
+or
+return
+function Snake.getHead 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Snake.dispose 1
+push argument 0
+pop pointer 0
+push this 1
+call Node.getPrev 1
+pop local 0
+push local 0
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+call Node.dispose 1
+pop temp 0
+label IF_FALSE0
+push this 1
+call Node.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return

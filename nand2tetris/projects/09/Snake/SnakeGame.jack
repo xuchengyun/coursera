@@ -1,0 +1,123 @@
+class SnakeGame {
+    static boolean exit;
+    static boolean pause;
+    static int direction;
+    static Snake snake;
+    static Node food;
+    static int score;
+    field int interval;
+
+    constructor SnakeGame new(){
+        do init();
+        return this;
+    }
+
+    method void init() {
+        let interval = 100;
+        let score = 0;
+        let exit = false;
+        let direction = 0;
+        let score = 0;
+        do Canvas.init();
+        let snake = Snake.new(10);
+        do SnakeGame.createFood();
+        do Random.setSeed()
+        return;
+    }
+
+    // The running main loop
+    method void run(){
+        var char key;  // the key currently pressed by the user
+
+        while (~exit) {
+            // waits for a key to be pressed
+            while ((key = 0) & (~exit)) {
+                let key = Keyboard.keyPressed();
+                do snake.move(direction);
+                do Sys.wait(interval);  // delays the next movement
+            }
+
+            if ((key = 131) & (~(direction = 2))) { let direction = 1; }     // up arrow
+            if ((key = 133) & (~(direction = 1))) { let direction = 2; }     // down arrow
+            if ((key = 130) & (~(direction = 4))) { let direction = 3; }     // left arrow
+            if ((key = 132) & (~(direction = 3))) { let direction = 4; }     // right arrow
+
+            // waits for the key to be released
+            while ((~(key = 0)) & (~exit)) {
+               let key = Keyboard.keyPressed();
+               do snake.move(direction);
+               do Sys.wait(interval / 2);  // speed up
+            }
+        }
+
+        do handleExit();
+        // do Canvas.drawEnd(score);
+        return;
+    }
+
+    method void handleExit() {
+        var char key; 
+        do Canvas.drawEnd(score);
+        while (~(key = 82)) {
+            let key = Keyboard.keyPressed();
+            if (key = 82) {
+                do snake.dispose();
+                do food.dispose();
+                do init();
+                do run();
+            }
+            do Sys.wait(2);
+        }
+        return;
+    }
+
+    method void dispose(){
+        do snake.dispose();
+        do food.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    function void addScore() {
+        let score = score + 1;
+        do Canvas.printScore(score);
+        return;
+    }
+
+    function boolean getExit () {
+        return exit;
+    }
+
+    function void setExit (boolean mExit) {
+        let exit = mExit;
+        return;
+    }
+
+    function void createFood() {
+        var Node temp;
+        var Node head;
+        var int mx;
+        var int my;
+        // do Log.log("is createFood");
+        let head = snake.getHead();
+        let temp = head;
+        let mx = Random.getInt(47);
+        let my = Random.getInt(29);
+
+        while(~(temp = null)){
+            while((temp.getX() = mx) & (temp.getY() = my)) {
+                let temp = head;
+                let mx = Random.getInt(47);
+                let my = Random.getInt(29);
+            }
+            let temp = temp.getPrev();
+        }
+        let food = Node.new(mx, my);
+        do food.drawNode();
+        return;
+    }
+
+    function Node getFood () {
+        return food;
+    }
+}

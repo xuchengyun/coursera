@@ -1,0 +1,13 @@
+class Log {
+    function void logString(String message) {
+        do Output.printString(message);
+        do Output.println();
+        return;
+    }
+
+    function void logInt(int i) {
+        do Output.printInt(i);
+        do Output.println();
+        return;
+    }
+}

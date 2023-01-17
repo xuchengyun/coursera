@@ -1,0 +1,276 @@
+function SnakeGame.new 0
+push constant 1
+call Memory.alloc 1
+pop pointer 0
+push pointer 0
+call SnakeGame.init 1
+pop temp 0
+push pointer 0
+return
+function SnakeGame.init 0
+push argument 0
+pop pointer 0
+push constant 100
+pop this 0
+push constant 0
+pop static 5
+push constant 0
+pop static 0
+push constant 0
+pop static 2
+push constant 0
+pop static 5
+call Canvas.init 0
+pop temp 0
+push constant 10
+call Snake.new 1
+pop static 3
+call SnakeGame.createFood 0
+pop temp 0
+push constant 0
+return
+function SnakeGame.run 1
+push argument 0
+pop pointer 0
+label WHILE_EXP0
+push static 0
+not
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push constant 0
+eq
+push static 0
+not
+and
+not
+if-goto WHILE_END1
+call Keyboard.keyPressed 0
+pop local 0
+push static 3
+push static 2
+call Snake.move 2
+pop temp 0
+push this 0
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 0
+push constant 131
+eq
+push static 2
+push constant 2
+eq
+not
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 1
+pop static 2
+label IF_FALSE0
+push local 0
+push constant 133
+eq
+push static 2
+push constant 1
+eq
+not
+and
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 2
+pop static 2
+label IF_FALSE1
+push local 0
+push constant 130
+eq
+push static 2
+push constant 4
+eq
+not
+and
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 3
+pop static 2
+label IF_FALSE2
+push local 0
+push constant 132
+eq
+push static 2
+push constant 3
+eq
+not
+and
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push constant 4
+pop static 2
+label IF_FALSE3
+label WHILE_EXP2
+push local 0
+push constant 0
+eq
+not
+push static 0
+not
+and
+not
+if-goto WHILE_END2
+call Keyboard.keyPressed 0
+pop local 0
+push static 3
+push static 2
+call Snake.move 2
+pop temp 0
+push this 0
+push constant 2
+call Math.divide 2
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP2
+label WHILE_END2
+goto WHILE_EXP0
+label WHILE_END0
+push pointer 0
+call SnakeGame.handleExit 1
+pop temp 0
+push constant 0
+return
+function SnakeGame.handleExit 1
+push argument 0
+pop pointer 0
+push static 5
+call Canvas.drawEnd 1
+pop temp 0
+label WHILE_EXP0
+push local 0
+push constant 82
+eq
+not
+not
+if-goto WHILE_END0
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+push constant 82
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push static 3
+call Snake.dispose 1
+pop temp 0
+push static 4
+call Node.dispose 1
+pop temp 0
+push pointer 0
+call SnakeGame.init 1
+pop temp 0
+push pointer 0
+call SnakeGame.run 1
+pop temp 0
+label IF_FALSE0
+push constant 2
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function SnakeGame.dispose 0
+push argument 0
+pop pointer 0
+push static 3
+call Snake.dispose 1
+pop temp 0
+push static 4
+call Node.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function SnakeGame.addScore 0
+push static 5
+push constant 1
+add
+pop static 5
+push static 5
+call Canvas.printScore 1
+pop temp 0
+push constant 0
+return
+function SnakeGame.getExit 0
+push static 0
+return
+function SnakeGame.setExit 0
+push argument 0
+pop static 0
+push constant 0
+return
+function SnakeGame.createFood 4
+push static 3
+call Snake.getHead 1
+pop local 1
+push local 1
+pop local 0
+push constant 47
+call Random.getInt 1
+pop local 2
+push constant 29
+call Random.getInt 1
+pop local 3
+label WHILE_EXP0
+push local 0
+push constant 0
+eq
+not
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+call Node.getX 1
+push local 2
+eq
+push local 0
+call Node.getY 1
+push local 3
+eq
+and
+not
+if-goto WHILE_END1
+push local 1
+pop local 0
+push constant 47
+call Random.getInt 1
+pop local 2
+push constant 29
+call Random.getInt 1
+pop local 3
+goto WHILE_EXP1
+label WHILE_END1
+push local 0
+call Node.getPrev 1
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+push local 2
+push local 3
+call Node.new 2
+pop static 4
+push static 4
+call Node.drawNode 1
+pop temp 0
+push constant 0
+return
+function SnakeGame.getFood 0
+push static 4
+return

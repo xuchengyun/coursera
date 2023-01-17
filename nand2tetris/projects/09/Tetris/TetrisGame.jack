@@ -1,0 +1,148 @@
+/**
+ * a (sort of) 'singleton' class that represents a Tetris game.
+*/
+
+class TetrisGame {
+  static TetrisGame instance;
+  static World world;
+
+  field boolean exit;
+
+  constructor TetrisGame new() {
+    var int v;
+
+    do Screen.clearScreen();
+
+    do MainWindow.init();
+    do ScoreBoard.init();
+    do NextWindow.init();
+
+    do World.newInstance();
+    let world = World.getInstance();
+    do Block.setWorld(world);
+
+    let exit = false;
+
+    let v = MainWindow.waitStart(); // to generate seed
+    do Rand.init(v);
+
+    return this;
+  }
+
+  method void dispose() {
+    do Memory.deAlloc(this);
+    return;
+  }
+
+  function void newInstance() {
+    let instance = TetrisGame.new();
+    return;
+  }
+
+  function TetrisGame getInstance() {
+    return instance;
+  }
+
+  method void run() {
+    var Player player;
+    var Block block, nextBlock;
+    var char key, last_key;
+    var boolean interval;
+    var int interval_timer;
+    var int i;
+
+    let player = Player.new();
+    let interval = false;
+    let last_key = null;
+
+    do Block.setPlayer(player);
+    do Clock.setLandingTime(2000); // TODO might vary depending on the level
+    do Clock.setUnitTime(1000); // TODO might vary depending on the level
+     let nextBlock = Block.spawn(Rand.take());
+
+    while (~exit) {
+      if (block = 0) {
+        let block = nextBlock;
+        let i = Rand.take();
+        let nextBlock = Block.spawn(i);
+        do nextBlock.drawNext();
+
+        if (block.isGameOver()) {
+          let exit = true;
+        }
+      }
+      let key = Keyboard.keyPressed();
+
+      if (key = 140) {   // 'ESC'
+        let exit = true;
+      }
+
+      if (~exit) {
+
+        if (~(key = null)) {
+          if (key = last_key) {
+            if (interval) {
+              let interval_timer = interval_timer - 1;
+              if (interval_timer < 0) {
+                let interval = false;
+              }
+            } else {
+              let interval = true;
+              let interval_timer = 100; // TODO: waiting for key
+            }
+          } else {
+            let interval = false;
+          }
+        } else {
+          let interval = false;
+        }
+
+        if (~interval) {
+          if (key = 130) {   // move left
+            if(block > 0) {
+              do block.moveLeft();
+            }
+          }
+          if (key = 132) {   // move right
+            if(block > 0) {
+              do block.moveRight();
+            }
+          }
+          if (key = 133) {   // down arrow: soft drop
+            if(block > 0) {
+              let block = block.softDrop();
+            }
+          }
+          if (key = 32) {   // space: hard drop
+            if(block > 0) {
+              let block = block.hardDrop();
+            }
+          }
+          if (key = 90) {   // 'Z' : rotate left
+            if(block > 0) {
+              do block.rotateLeft();
+            }
+          }
+          if (key = 131) {   // up arrow: rotate right
+            if(block > 0) {
+              do block.rotateRight();
+            }
+          }
+        }
+
+        if (block > 0) {
+          let block = block.makeFall();
+        }
+      }
+
+      let last_key = key;
+      let key = null;
+    }
+
+    if (exit) {
+      do MainWindow.gameOver();
+    }
+
+    return;
+  }
+}

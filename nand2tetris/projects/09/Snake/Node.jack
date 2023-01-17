@@ -1,0 +1,69 @@
+class Node {
+    field int x; // 0 - 47
+    field int y; // 0 - 29
+    field Node next;
+    field Node prev;
+    field int border;
+    field int len;
+
+    constructor Node new(int xx, int yy){
+        let x = xx;
+        let y = yy;
+        let border = 8;
+        let len = 8;
+        return this;
+    }
+
+    method int getX(){
+        return x;
+    }
+
+    method int getY(){
+        return y;
+    }
+
+    method Node getNext(){
+        return next;
+    }
+
+    method Node getPrev(){
+        return prev;
+    }
+
+    method void setX(int xx){
+        let x = xx;
+        return;
+    }
+
+    method void setY(int yy){
+        let y = yy;
+        return;
+    }
+
+    method void setNext(Node nextt){
+        let next = nextt;
+        return;
+    }
+
+    method void setPrev(Node prevv){
+        let prev = prevv;
+        return;
+    }
+
+    method void drawNode() {
+        do Screen.drawRectangle(x * len + border, y * len + border, x * len + len + border - 1, y * len + len + border - 1);
+        return;
+    }
+
+    method void clearNode() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x * len + border, y * len + border, x * len + len + border - 1, y * len + len + border - 1);
+        do Screen.setColor(true);
+        return;
+    }
+
+    method void dispose(){
+        do Memory.deAlloc(this);
+        return;
+    }
+}
