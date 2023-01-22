@@ -7,7 +7,7 @@ public class JackAnalyzer {
     private static Parser parser;
     private static CodeWriter writer;
 
-    public static void main(String[] args) throws VMSyntaxException, IOException {
+    public static void main(String[] args) throws JackCompilerException, IOException {
         if (args.length > 1) {
             throw new IllegalArgumentException("There are more than 1 arguments");
         }
@@ -29,11 +29,8 @@ public class JackAnalyzer {
             if (file.isDirectory()) {
                 File[] listOfFiles = file.listFiles();
                 assert (listOfFiles != null);
-                if (Arrays.stream(listOfFiles).anyMatch(x -> x.getName().equals("Sys.vm"))) {
-                    writer.writeInit();
-                }
                 for (File listOfFile : listOfFiles) {
-                    if (listOfFile.isFile() && listOfFile.getPath().endsWith(".vm")) {
+                    if (listOfFile.isFile() && listOfFile.getPath().endsWith(".jack")) {
                         parse(listOfFile.getName(), listOfFile.getPath());
                     }
                 }
@@ -52,8 +49,8 @@ public class JackAnalyzer {
         }
     }
 
-    private static void parse(String fileName, String filePath) throws IOException, VMSyntaxException {
-        parser = new Parser(filePath);
+    private static void parse(String fileName, String filePath) throws IOException, JackCompilerException {
+        JackTokenizer tokenizer = new JackTokenizer(filePath);
         writer.setFileName(fileName);
         while (parser.hasMoreCommands()) {
             parser.advance();
