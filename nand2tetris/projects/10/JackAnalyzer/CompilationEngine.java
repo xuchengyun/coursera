@@ -13,29 +13,29 @@ public class CompilationEngine {
             if (isClassVarDec(tokenizer.currentToken)) {
                 compileClassVarDec();
             } else if (isClassSubroutineDec(tokenizer.currentToken)) {
-                compileSubroutine();
+                compileSubroutineDec();
             }
         }
     }
 
     private boolean isClassVarDec(Token currentToken) {
-        return "static".equals(tokenizer.currentToken.value) || "field".equals(tokenizer.currentToken.value);
+        return "static".equals(currentToken.value) || "field".equals(currentToken.value);
     }
     private boolean isClassSubroutineDec(Token currentToken) {
-        return "constructor".equals(tokenizer.currentToken.value) ||
-                "function".equals(tokenizer.currentToken.value) ||
-                "method".equals(tokenizer.currentToken.value);
+        return "constructor".equals(currentToken.value) ||
+                "function".equals(currentToken.value) ||
+                "method".equals(currentToken.value);
     }
 
-    public void compileClassVarDec() throws JackCompilerException {
+    private void compileClassVarDec() throws JackCompilerException {
         eat();
         if (isType(tokenizer.currentToken)) {
             eat();
         } else {
-            throw new JackCompilerException("Unexpected Token: " + tokenizer.currentToken.value);
+            throw new JackCompilerException("Unexpected Token: " + tokenizer.tokenValue());
         }
         eat(Token.TokenType.IDENTIFIER);
-        while (tokenizer.currentToken.symbol == ',') {
+        while (tokenizer.symbol() == ',') {
             eat();
             eat(Token.TokenType.IDENTIFIER);
         }
@@ -43,18 +43,18 @@ public class CompilationEngine {
     }
 
     private boolean isType(Token currentToken) {
-        return "int".equals(tokenizer.currentToken.value) ||
-                "char".equals(tokenizer.currentToken.value) ||
-                "boolean".equals(tokenizer.currentToken.value) ||
+        return "int".equals(currentToken.value) ||
+                "char".equals(currentToken.value) ||
+                "boolean".equals(currentToken.value) ||
                 Token.TokenType.IDENTIFIER.equals(currentToken.type);
     }
 
-    public void compileSubroutine() throws JackCompilerException {
+    private void compileSubroutineDec() throws JackCompilerException {
         eat();
-        if ("void".equals(tokenizer.currentToken.value) || isType(tokenizer.currentToken)) {
+        if ("void".equals(tokenizer.tokenValue()) || isType(tokenizer.currentToken)) {
             eat();
         } else {
-            throw new JackCompilerException("Unexpected Token: " + tokenizer.currentToken.value);
+            throw new JackCompilerException("Unexpected Token: " + tokenizer.tokenValue());
         }
         eat(Token.TokenType.IDENTIFIER);
         eat("(");
@@ -63,59 +63,54 @@ public class CompilationEngine {
         compileSubroutineBody();
     }
 
-    public void compileSubroutineBody() throws JackCompilerException {
+    private void compileSubroutineBody() throws JackCompilerException {
         eat("{");
-        if (isType(tokenizer.currentToken)) {
-            eat();
-        } else {
-            throw new JackCompilerException("Unexpected Token: " + tokenizer.currentToken.value);
+        while("var".equals(tokenizer.tokenValue())) {
+            compileVarDec();
         }
-        eat(Token.TokenType.IDENTIFIER);
-        while(tokenizer.currentToken.symbol == ',') {
-            eat();
-            eat(Token.TokenType.IDENTIFIER);
-        }
+        compileStatements();
+        eat("}");
     }
 
-    public void compileParameterList() throws JackCompilerException {
+    private void compileParameterList() throws JackCompilerException {
         if (isType(tokenizer.currentToken)) {
             eat();
             eat(Token.TokenType.IDENTIFIER);
-            while (tokenizer.currentToken.symbol == ',') {
+            while (tokenizer.symbol()== ',') {
                 eat();
                 if (isType(tokenizer.currentToken)) {
                     eat();
                 } else {
-                    throw new JackCompilerException("Unexpected Token: " + tokenizer.currentToken.value);
+                    throw new JackCompilerException("Unexpected Token: " + tokenizer.tokenValue());
                 }
                 eat(Token.TokenType.IDENTIFIER);
             }
         }
     }
 
-    public void compileVarDec() throws JackCompilerException {
+    private void compileVarDec() throws JackCompilerException {
         eat("var");
         if (isType(tokenizer.currentToken)) {
             eat();
         } else {
-            throw new JackCompilerException("Unexpected Token: " + tokenizer.currentToken.value);
+            throw new JackCompilerException("Unexpected Token: " + tokenizer.tokenValue());
         }
         eat(Token.TokenType.IDENTIFIER);
-        while(tokenizer.currentToken.symbol == ',') {
+        while(tokenizer.symbol() == ',') {
             eat();
             eat(Token.TokenType.IDENTIFIER);
         }
         eat(";");
     }
 
-    public void compileStatements() throws JackCompilerException {
+    private void compileStatements() throws JackCompilerException {
         while (isStatement(tokenizer.currentToken)) {
             compileStatement();
         }
     }
 
     private void compileStatement() throws JackCompilerException {
-        switch (tokenizer.currentToken.value) {
+        switch (tokenizer.tokenValue()) {
             case "let" : compileLet(); break;
             case "if" : compileIf(); break;
             case "while" : compileWhile(); break;
@@ -124,19 +119,25 @@ public class CompilationEngine {
         }
     }
 
-    public void compileDo() {
-
+    private void compileDo() throws JackCompilerException {
+        eat("do");
+        compileSubroutineCall();
     }
 
-    public void compileLet() throws JackCompilerException {
+    private void compileLet() throws JackCompilerException {
         eat("let");
-        compileVarDec();
+        eat(Token.TokenType.IDENTIFIER);
+        if (tokenizer.symbol() == '[') {
+            eat("[");
+            compileExpression();
+            eat("]");
+        }
         eat("=");
         compileExpression();
         eat(";");
     }
 
-    public void compileWhile() throws JackCompilerException {
+    private void compileWhile() throws JackCompilerException {
         eat("while");
         eat("(");
         compileExpression();
@@ -146,16 +147,16 @@ public class CompilationEngine {
         eat("}");
     }
 
-    public void compileReturn() throws JackCompilerException {
+    private void compileReturn() throws JackCompilerException {
         eat("return");
-        if (Token.TokenType.SYMBOL.equals(tokenizer.currentToken.type) && tokenizer.currentToken.symbol == ';') {
+        if (Token.TokenType.SYMBOL.equals(tokenizer.tokenType()) && tokenizer.symbol()== ';') {
             eat(";");
         } else {
             compileExpression();
         }
     }
 
-    public void compileIf() throws JackCompilerException {
+    private void compileIf() throws JackCompilerException {
         eat("if");
         eat("(");
         compileExpression();
@@ -163,9 +164,29 @@ public class CompilationEngine {
         eat("{");
         compileStatements();
         eat("}");
+        if ("else".equals(tokenizer.tokenValue())) {
+            eat("{");
+            compileExpression();
+            eat("}");
+        }
     }
 
-    public void compileExpression() {
+    private void compileSubroutineCall() throws JackCompilerException {
+        eat(Token.TokenType.IDENTIFIER);
+        if (tokenizer.symbol() == '(') {
+            eat("(");
+            compileExpressionList();
+            eat(")");
+        } else if (tokenizer.symbol() == '.') {
+            eat(".");
+            eat(Token.TokenType.IDENTIFIER);
+            eat("(");
+            compileExpressionList();
+            eat(")");
+        }
+    }
+
+    private void compileExpression() {
         compileTerm();
         while (isOp(tokenizer.currentToken)) {
             eat();
@@ -174,12 +195,18 @@ public class CompilationEngine {
     }
 
 
-    public void compileTerm() {
+    private void compileTerm() {
 
     }
 
-    public void compileExpressionList() {
-
+    public void compileExpressionList() throws JackCompilerException {
+        if (tokenizer.symbol() != ')'){
+            compileExpression();
+            while (tokenizer.symbol() == ',') {
+                eat(",");
+                compileExpression();
+            }
+        }
     }
 
     private boolean isStatement(Token currentToken) {
@@ -215,7 +242,7 @@ public class CompilationEngine {
     }
 
     private void eat(Token.TokenType type) throws JackCompilerException {
-        if (tokenizer.currentToken.type.equals(type)) {
+        if (tokenizer.tokenType().equals(type)) {
             tokenizer.advance();
         } else {
             throw new JackCompilerException("Unexpected Token: " + tokenizer.currentToken.value);

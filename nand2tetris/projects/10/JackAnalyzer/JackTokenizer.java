@@ -120,10 +120,18 @@ public class JackTokenizer {
     public String stringVal() {
         return currentToken.stringVal;
     }
+    public Token currentToken() {
+        return this.currentToken;
+    }
+
+    public String tokenValue() {
+        return this.currentToken.value;
+    }
 
     private boolean isSymbol(char character) {
         return Token.symbols.contains(String.valueOf(character));
     }
+
 
     public void printTokens() {
         for (Token t: tokens) {
