@@ -1,6 +1,7 @@
 public class CompilationEngine {
-    public CompilationEngine() {
-
+    JackTokenizer tokenizer;
+    public CompilationEngine(JackTokenizer tokenizer) {
+        this.tokenizer = tokenizer;
     }
 
     public void compileClass() {

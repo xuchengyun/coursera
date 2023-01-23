@@ -9,18 +9,16 @@ public class JackTokenizer {
 
     private final char[] chars;
     List<Token> tokens;
-    Token token;
-    Scanner scanner;
-
-
+    Token currentToken;
+    int pos;
 
     public JackTokenizer(File file) throws IOException {
-
+        this.pos = 0;
         StringBuilder content = new StringBuilder();
         try (Scanner scanner = new Scanner(file)) {
             while (scanner.hasNextLine()) {
-                content.append(scanner.nextLine().trim());
-                System.out.println(file.getName() + ":" + content);
+                content.append(remoComments(scanner.nextLine()).trim());
+//                System.out.println(file.getName() + ":" + content);
             }
         }
 
@@ -31,43 +29,61 @@ public class JackTokenizer {
         scan();
     }
 
+    private String remoComments(String line) {
+        int index = line.indexOf("//");
+        if (index > -1) {
+            return line.substring(0, index);
+        }
+
+        return line;
+    }
+
     private void scan() {
         int pos = 0;
+        boolean startStrConst = false;
         StringBuilder tokenBuilder = new StringBuilder();
         while (pos < chars.length) {
             char ch = chars[pos];
             if (isSymbol(ch)) {
+                tokens.add(parseToken(tokenBuilder.toString()));
                 tokens.add(new Token.TokenBuilder(Token.TokenType.SYMBOL).symbol(ch).build());
-                pos++;
-//                break;
+                tokenBuilder = new StringBuilder();
+            } else if (isSpace(ch)) {
+                if (!tokenBuilder.toString().isEmpty()) {
+                    tokens.add(parseToken(tokenBuilder.toString()));
+                }
+                tokenBuilder = new StringBuilder();
+            } else if (ch == '"') {
+                if (startStrConst) {
+                    tokens.add(new Token.TokenBuilder(Token.TokenType.STRING_CONST).stringVal(tokenBuilder.toString()).build());
+                    startStrConst = false;
+                    tokenBuilder = new StringBuilder();
+                } else {
+                    startStrConst = true;
+                }
+            } else {
+                tokenBuilder.append(ch);
             }
-//            switch (ch) {
-//
-//                // Symbols
-//                case '{': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '}': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '(': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case ')': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '[': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case ']': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '.': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case ';': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '+': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '-': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '*': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '/': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '&': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '|': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '<': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '>': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '=': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//                case '~': {tokens.add(new Token(TokenType.SYMBOL)); pos++;} break;
-//
-//                case
-//
-//            }
+            pos++;
         }
+        System.out.println(tokens);
+    }
 
+    private boolean isSpace(char ch) {
+        return ch == ' ' || ch == '\t' || ch == '\n';
+    }
+
+    private Token parseToken(String s) {
+        if (Token.keywords.contains(s)) {
+            return new Token.TokenBuilder(Token.TokenType.KEYWORD).keyword(s).build();
+        }
+        try {
+            int val = Integer.parseInt(s);
+            return new Token.TokenBuilder(Token.TokenType.INT_CONST).intVal(val).build();
+
+        } catch (NumberFormatException e) {
+            return  new Token.TokenBuilder(Token.TokenType.IDENTIFIER).identifier(s).build();
+        }
     }
 
     private String removeBlockComment(String content) {
@@ -75,31 +91,31 @@ public class JackTokenizer {
     }
 
     public boolean hasMoreTokens() {
-        return true;
+        return pos < tokens.size();
     }
 
-    public Token tokenType() {
-        return null;
+    public Token.TokenType tokenType() {
+        return currentToken.type;
     }
 
-    public KeyWord keyWord() {
-        return null;
+    public Token.KeyWord keyWord() {
+        return currentToken.keyword;
     }
 
     public char symbol() {
-        return 'c';
+        return currentToken.symbol;
     }
 
     public String identifier() {
-        return null;
+        return currentToken.identifier;
     }
 
     public int intVal() {
-        return 0;
+        return currentToken.intVal;
     }
 
     public String stringVal() {
-        return "";
+        return currentToken.stringVal;
     }
 
     private boolean isSymbol(char character) {

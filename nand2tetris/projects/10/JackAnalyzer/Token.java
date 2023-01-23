@@ -17,6 +17,7 @@ public class Token {
     String identifier;
     char symbol;
     int intVal;
+    String stringVal;
 
     public enum TokenType {
         KEYWORD,
@@ -68,6 +69,7 @@ public class Token {
         private String identifier;
         private char symbol;
         private int intVal;
+        private String stringVal;
 
 
         public TokenBuilder(TokenType type) {
@@ -91,6 +93,11 @@ public class Token {
 
         public TokenBuilder intVal(int val) {
             this.intVal = val;
+            return this;
+        }
+
+        public TokenBuilder stringVal(String val) {
+            this.stringVal = val;
             return this;
         }
 
