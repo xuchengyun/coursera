@@ -44,18 +44,21 @@ public class JackTokenizer {
         StringBuilder tokenBuilder = new StringBuilder();
         while (pos < chars.length) {
             char ch = chars[pos];
-            if (isSymbol(ch)) {
-                tokens.add(parseToken(tokenBuilder.toString()));
-                tokens.add(new Token.TokenBuilder(Token.TokenType.SYMBOL).symbol(ch).build());
+            if (!startStrConst && isSymbol(ch)) {
+                if (!tokenBuilder.toString().isEmpty()) {
+                    tokens.add(parseToken(tokenBuilder.toString()));
+                }
+                tokens.add(new Token.TokenBuilder(Token.TokenType.SYMBOL, Character.toString(ch)).symbol(ch).build());
                 tokenBuilder = new StringBuilder();
-            } else if (isSpace(ch)) {
+            } else if (!startStrConst && isSpace(ch)) {
                 if (!tokenBuilder.toString().isEmpty()) {
                     tokens.add(parseToken(tokenBuilder.toString()));
                 }
                 tokenBuilder = new StringBuilder();
             } else if (ch == '"') {
                 if (startStrConst) {
-                    tokens.add(new Token.TokenBuilder(Token.TokenType.STRING_CONST).stringVal(tokenBuilder.toString()).build());
+                    tokens.add(new Token.TokenBuilder(Token.TokenType.STRING_CONST,
+                            tokenBuilder.toString()).stringVal(tokenBuilder.toString()).build());
                     startStrConst = false;
                     tokenBuilder = new StringBuilder();
                 } else {
@@ -75,14 +78,14 @@ public class JackTokenizer {
 
     private Token parseToken(String s) {
         if (Token.keywords.contains(s)) {
-            return new Token.TokenBuilder(Token.TokenType.KEYWORD).keyword(s).build();
+            return new Token.TokenBuilder(Token.TokenType.KEYWORD, s).keyword(s).build();
         }
         try {
             int val = Integer.parseInt(s);
-            return new Token.TokenBuilder(Token.TokenType.INT_CONST).intVal(val).build();
+            return new Token.TokenBuilder(Token.TokenType.INT_CONST, s).intVal(val).build();
 
         } catch (NumberFormatException e) {
-            return  new Token.TokenBuilder(Token.TokenType.IDENTIFIER).identifier(s).build();
+            return  new Token.TokenBuilder(Token.TokenType.IDENTIFIER, s).identifier(s).build();
         }
     }
 
@@ -122,4 +125,29 @@ public class JackTokenizer {
         return Token.symbols.contains(String.valueOf(character));
     }
 
+    public void printTokens() {
+        for (Token t: tokens) {
+            switch (t.type) {
+                // Skip empty line and comments
+                case KEYWORD:
+                    System.out.println("<keyword> " + t.keyword.toString().toLowerCase() +" </keyword>");
+                    break;
+                case SYMBOL:
+                    System.out.println("<symbol> " + t.symbol +" </symbol>");
+                    break;
+                case INT_CONST:
+                    System.out.println("<intConst> " + t.intVal +" </intConst>");
+                    break;
+                case STRING_CONST:
+                    System.out.println("<stringConstant> " + t.stringVal +" </stringConstant>");
+                    break;
+                case IDENTIFIER:
+                    System.out.println("<identifier> " + t.identifier +" </identifier>");
+                    break;
+            }
+        }
+    }
+
+    public void advance() {
+    }
 }

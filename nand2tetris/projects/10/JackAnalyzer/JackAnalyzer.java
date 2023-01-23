@@ -31,8 +31,9 @@ public class JackAnalyzer {
 
     private static void compile(File file) throws IOException {
         JackTokenizer tokenizer = new JackTokenizer(file);
-        CompilationEngine compilationEngine = new CompilationEngine(tokenizer);
-        compilationEngine.compileClass();
+        tokenizer.printTokens();
+//        CompilationEngine compilationEngine = new CompilationEngine(tokenizer);
+//        compilationEngine.compileClass();
 
     }
 

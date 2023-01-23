@@ -25,27 +25,42 @@ public class CompilationEngine {
     }
 
     public void compileStatements() {
-
     }
 
     public void compileDo() {
 
     }
 
-    public void compileDLet() {
-
+    public void compileLet() throws JackCompilerException {
+        eat("let");
+        compileVarDec();
+        eat("=");
+        compileExpression();
+        eat(";");
     }
 
-    public void compleWhile() {
-
+    public void compileWhile() throws JackCompilerException {
+        eat("while");
+        eat("(");
+        compileExpression();
+        eat(")");
+        eat("{");
+        compileStatements();
+        eat("}");
     }
 
     public void compileReturn() {
 
     }
 
-    public void compileIf() {
-
+    public void compileIf() throws JackCompilerException {
+        eat("if");
+        eat("(");
+        compileExpression();
+        eat(")");
+        eat("{");
+        compileStatements();
+        eat("}");
     }
 
     public void compileExpression() {
@@ -55,4 +70,16 @@ public class CompilationEngine {
     public void compileTerm() {
 
     }
+
+    private void eat(String str) throws JackCompilerException {
+        if (str == null) {
+            throw new IllegalArgumentException("Parsing null value to eat method");
+        }
+        if (str.equals(tokenizer.currentToken.value)) {
+            tokenizer.advance();
+        } else {
+            throw new JackCompilerException("Unexpected Token: " + str);
+        }
+    }
+
 }
