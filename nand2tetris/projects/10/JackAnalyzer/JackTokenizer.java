@@ -10,19 +10,7 @@ public class JackTokenizer {
     List<Token> tokens;
     Token currentToken;
     int pos;
-
     BufferedWriter writer;
-
-    private static final Map<Character, String> symbolMap;
-
-    static {
-        symbolMap = new HashMap<>();
-        symbolMap.put('<', "&lt;");
-        symbolMap.put('>', "&gt;");
-        symbolMap.put('"', "&quot;");
-        symbolMap.put('&', "&amp;");
-
-    }
 
     public JackTokenizer(File file, String filePath) throws IOException {
         writer = new BufferedWriter(new FileWriter(filePath));
@@ -164,7 +152,7 @@ public class JackTokenizer {
                     writer.newLine();
                     break;
                 case SYMBOL:
-                    writer.write("<symbol> " + (symbolMap.containsKey(t.symbol) ? symbolMap.get(t.symbol) : t.symbol) +" </symbol>");
+                    writer.write("<symbol> " + (Token.symbolMap.containsKey(t.symbol) ? Token.symbolMap.get(t.symbol) : t.symbol) +" </symbol>");
                     writer.newLine();
                     break;
                 case INT_CONST:

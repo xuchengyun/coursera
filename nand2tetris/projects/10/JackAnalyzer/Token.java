@@ -1,5 +1,7 @@
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Token {
     public static final List<String> keywords =
@@ -13,6 +15,15 @@ public class Token {
             Arrays.asList("{", "}", "(", ")", "[", "]", ".",
                     ",", ";", "+", "-", "*", "/", "&",
                     "|", "<", ">", "=", "~");
+    public static final Map<Character, String> symbolMap;
+    static {
+        symbolMap = new HashMap<>();
+        symbolMap.put('<', "&lt;");
+        symbolMap.put('>', "&gt;");
+        symbolMap.put('"', "&quot;");
+        symbolMap.put('&', "&amp;");
+
+    }
 
     String identifier;
     char symbol;
