@@ -22,11 +22,19 @@ public class Token {
     String value;
 
     public enum TokenType {
-        KEYWORD,
-        SYMBOL,
-        INT_CONST,
-        STRING_CONST,
-        IDENTIFIER
+        KEYWORD("keyword"),
+        SYMBOL("symbol"),
+        INT_CONST("integerConstant"),
+        STRING_CONST("stringConstant"),
+        IDENTIFIER("identifier");
+        private final String text;
+        TokenType(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return this.text;
+        }
     }
 
     public enum KeyWord {

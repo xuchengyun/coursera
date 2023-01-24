@@ -1,9 +1,8 @@
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class JackTokenizer {
 
@@ -12,13 +11,26 @@ public class JackTokenizer {
     Token currentToken;
     int pos;
 
-    public JackTokenizer(File file) throws IOException {
-        this.pos = 0;
+    BufferedWriter writer;
+
+    private static final Map<Character, String> symbolMap;
+
+    static {
+        symbolMap = new HashMap<>();
+        symbolMap.put('<', "&lt;");
+        symbolMap.put('>', "&gt;");
+        symbolMap.put('"', "&quot;");
+        symbolMap.put('&', "&amp;");
+
+    }
+
+    public JackTokenizer(File file, String filePath) throws IOException {
+        writer = new BufferedWriter(new FileWriter(filePath));
+
         StringBuilder content = new StringBuilder();
         try (Scanner scanner = new Scanner(file)) {
             while (scanner.hasNextLine()) {
                 content.append(remoComments(scanner.nextLine()).trim());
-//                System.out.println(file.getName() + ":" + content);
             }
         }
 
@@ -27,6 +39,14 @@ public class JackTokenizer {
         this.chars = Arrays.copyOf(precessedString.toCharArray(), numChars + 1);
         tokens = new ArrayList<>();
         scan();
+        if (tokens.size() > 0) {
+            currentToken = tokens.get(0);
+            pos = 0;
+        } else {
+            throw new IllegalArgumentException("No tokens generated from input");
+        }
+        printTokens();
+        writer.close();
     }
 
     private String remoComments(String line) {
@@ -94,7 +114,7 @@ public class JackTokenizer {
     }
 
     public boolean hasMoreTokens() {
-        return pos < tokens.size();
+        return pos + 1 < tokens.size();
     }
 
     public Token.TokenType tokenType() {
@@ -133,29 +153,42 @@ public class JackTokenizer {
     }
 
 
-    public void printTokens() {
+    public void printTokens() throws IOException {
+        writer.write("<tokens>");
+        writer.newLine();
         for (Token t: tokens) {
             switch (t.type) {
                 // Skip empty line and comments
                 case KEYWORD:
-                    System.out.println("<keyword> " + t.keyword.toString().toLowerCase() +" </keyword>");
+                    writer.write("<keyword> " + t.keyword.toString().toLowerCase() +" </keyword>");
+                    writer.newLine();
                     break;
                 case SYMBOL:
-                    System.out.println("<symbol> " + t.symbol +" </symbol>");
+                    writer.write("<symbol> " + (symbolMap.containsKey(t.symbol) ? symbolMap.get(t.symbol) : t.symbol) +" </symbol>");
+                    writer.newLine();
                     break;
                 case INT_CONST:
-                    System.out.println("<intConst> " + t.intVal +" </intConst>");
+                    writer.write("<intConst> " + t.intVal +" </intConst>");
+                    writer.newLine();
                     break;
                 case STRING_CONST:
-                    System.out.println("<stringConstant> " + t.stringVal +" </stringConstant>");
+                    writer.write("<stringConstant> " + t.stringVal +" </stringConstant>");
+                    writer.newLine();
                     break;
                 case IDENTIFIER:
-                    System.out.println("<identifier> " + t.identifier +" </identifier>");
+                    writer.write("<identifier> " + t.identifier +" </identifier>");
+                    writer.newLine();
                     break;
             }
         }
+        writer.write("</tokens>");
+        writer.newLine();
     }
 
     public void advance() {
+        if (hasMoreTokens()) {
+            pos++;
+            currentToken = tokens.get(pos);
+        }
     }
 }

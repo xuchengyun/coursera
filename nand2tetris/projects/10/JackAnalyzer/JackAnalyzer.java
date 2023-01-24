@@ -4,9 +4,6 @@ import java.util.Arrays;
 
 public class JackAnalyzer {
 
-    private static Parser parser;
-    private static CodeWriter writer;
-
     public static void main(String[] args) throws JackCompilerException, IOException {
         if (args.length > 1) {
             throw new IllegalArgumentException("There are more than 1 arguments");
@@ -29,13 +26,13 @@ public class JackAnalyzer {
         }
     }
 
-    private static void compile(File file) throws IOException {
-        JackTokenizer tokenizer = new JackTokenizer(file);
-        tokenizer.printTokens();
-//        CompilationEngine compilationEngine = new CompilationEngine(tokenizer);
-//        compilationEngine.compileClass();
+    private static void compile(File file) throws IOException, JackCompilerException {
+        String fileOutPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(".")) + ".xml";
+        String tokenFileOutPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(".")) + "T.xml";
 
+        JackTokenizer tokenizer = new JackTokenizer(file, tokenFileOutPath);
+        CompilationEngine compilationEngine = new CompilationEngine(tokenizer, fileOutPath);
+        compilationEngine.compileClass();
     }
-
 
 }
