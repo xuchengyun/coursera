@@ -85,7 +85,10 @@ public class Token {
         this.stringVal = builder.stringVal;
         this.value = builder.value;
     }
-
+    @Override
+    public String toString() {
+        return this.value + "|" + this.type;
+    }
     public static class TokenBuilder {
         private final TokenType type;
         private KeyWord keyword;
