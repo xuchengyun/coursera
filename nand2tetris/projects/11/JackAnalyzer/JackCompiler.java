@@ -1,8 +1,7 @@
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
-public class JackAnalyzer {
+public class JackCompiler {
 
     public static void main(String[] args) throws JackCompilerException, IOException {
         if (args.length > 1) {
@@ -27,11 +26,13 @@ public class JackAnalyzer {
     }
 
     private static void compile(File file) throws IOException, JackCompilerException {
-        String fileOutPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(".")) + ".xml";
+        String xmlPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(".")) + ".xml";
+        String vmPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(".")) + ".vm";
+
         String tokenFileOutPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(".")) + "T.xml";
 
         JackTokenizer tokenizer = new JackTokenizer(file, tokenFileOutPath);
-        CompilationEngine compilationEngine = new CompilationEngine(tokenizer, fileOutPath);
+        CompilationEngine compilationEngine = new CompilationEngine(tokenizer, xmlPath, vmPath);
         compilationEngine.compileClass();
     }
 

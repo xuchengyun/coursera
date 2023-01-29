@@ -6,16 +6,20 @@ import java.util.List;
 
 public class CompilationEngine {
     JackTokenizer tokenizer;
-    BufferedWriter writer;
+    BufferedWriter bufferWriter;
+    VMWriter vmWriter;
     List<String> l = new ArrayList<>();
-    public CompilationEngine(JackTokenizer tokenizer, String filePath) throws IOException {
+    String className;
+    public CompilationEngine(JackTokenizer tokenizer, String xmlPath, String vmPath) throws IOException {
         this.tokenizer = tokenizer;
-        writer = new BufferedWriter(new FileWriter(filePath));
+        bufferWriter = new BufferedWriter(new FileWriter(xmlPath));
+        vmWriter = new VMWriter(vmPath);
     }
 
     public void compileClass() throws JackCompilerException, IOException {
         println("<class>");
         eat("class");
+        className = tokenizer.identifier();
         eat(Token.TokenType.IDENTIFIER);
         eat("{");
         while (isClassVarDec(tokenizer.currentToken) || isClassSubroutineDec(tokenizer.currentToken)) {
@@ -27,7 +31,8 @@ public class CompilationEngine {
         }
         eat("}");
         println("</class>");
-        writer.close();
+        bufferWriter.close();
+        vmWriter.close();
     }
 
     private boolean isClassVarDec(Token currentToken) {
@@ -393,13 +398,13 @@ public class CompilationEngine {
     }
 
     private void println(String str) throws IOException {
-        writer.write(str);
-        writer.newLine();
+        bufferWriter.write(str);
+        bufferWriter.newLine();
         l.add(str);
     }
 
     public void close() throws IOException {
-        writer.close();
+        bufferWriter.close();
     }
 
     private void error(String str) throws JackCompilerException {
