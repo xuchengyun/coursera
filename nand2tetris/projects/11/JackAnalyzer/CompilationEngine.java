@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CompilationEngine {
+    SymbolTable symbolTable;
     JackTokenizer tokenizer;
     BufferedWriter bufferWriter;
     VMWriter vmWriter;
@@ -14,6 +15,7 @@ public class CompilationEngine {
         this.tokenizer = tokenizer;
         bufferWriter = new BufferedWriter(new FileWriter(xmlPath));
         vmWriter = new VMWriter(vmPath);
+        symbolTable = new SymbolTable();
     }
 
     public void compileClass() throws JackCompilerException, IOException {
@@ -47,8 +49,17 @@ public class CompilationEngine {
 
     private void compileClassVarDec() throws JackCompilerException, IOException {
         println("<classVarDec>");
+
+        Symbol.Kind kind = null;
+        String type = "";
+        String name = "";
+        switch (tokenizer.keyWord()) {
+            case STATIC: kind = Symbol.Kind.STATIC; break;
+            case FIELD: kind = Symbol.Kind.FIELD; break;
+        }
         eat();
         if (isType(tokenizer.currentToken)) {
+            type = tokenizer.currentToken.value;
             eat();
         } else {
             error("Token of Type");
@@ -56,6 +67,8 @@ public class CompilationEngine {
         eat(Token.TokenType.IDENTIFIER);
         while (tokenizer.symbol() == ',') {
             eat();
+            name = tokenizer.currentToken.value;
+            symbolTable.define(name, type, kind);
             eat(Token.TokenType.IDENTIFIER);
         }
         eat(";");
@@ -265,6 +278,7 @@ public class CompilationEngine {
         println("<term>");
         if (tokenizer.tokenType().equals(Token.TokenType.INT_CONST)) {
             // Case: integerConstant
+            vmWriter.writePush(VMWriter.Segment.CONST, tokenizer.intVal());
             eat();
         } else if (tokenizer.tokenType().equals(Token.TokenType.STRING_CONST)) {
             // Case: stringConstant
@@ -287,6 +301,8 @@ public class CompilationEngine {
             // ')'
             eat(")");
         } else if (tokenizer.tokenType().equals(Token.TokenType.IDENTIFIER)) {
+            String identifier = tokenizer.stringVal();
+            vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
             eat();
             if (tokenizer.currentToken.value.equals("[")) {
                 eat("[");
@@ -311,6 +327,10 @@ public class CompilationEngine {
         }
         println("</term>");
 
+    }
+
+    private VMWriter.Segment getSeg(Symbol.Kind kindOf) {
+        return  null;
     }
 
     private boolean isUnaryOp(Token currentToken) {

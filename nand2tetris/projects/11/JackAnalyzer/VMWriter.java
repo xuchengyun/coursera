@@ -3,7 +3,8 @@ public class VMWriter {
 
     }
 
-    public void writePush() {
+    public void writePush(Segment segment, int index) {
+
 
     }
     public void writePop() {
@@ -34,5 +35,16 @@ public class VMWriter {
 
     public void close() {
 
+    }
+
+    public enum Segment {
+        CONST,
+        ARG,
+        LOCAL,
+        STATIC,
+        THIS,
+        THAT,
+        POINTER,
+        TEMP
     }
 }

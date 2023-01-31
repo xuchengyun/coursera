@@ -1,12 +1,12 @@
 public class Symbol {
 
-    public enum KIND {STATIC, FIELD, ARG, VAR, NONE};
+    public enum Kind {STATIC, FIELD, ARG, VAR, NONE};
 
     private String type;
-    private KIND kind;
+    private Kind kind;
     private int index;
 
-    public Symbol(String type, KIND kind, int index) {
+    public Symbol(String type, Kind kind, int index) {
         this.type = type;
         this.kind = kind;
         this.index = index;
@@ -16,7 +16,7 @@ public class Symbol {
         return type;
     }
 
-    public KIND getKind() {
+    public Kind getKind() {
         return kind;
     }
 
