@@ -11,11 +11,16 @@ public class CompilationEngine {
     VMWriter vmWriter;
     List<String> l = new ArrayList<>();
     String className;
+    String functionName;
+    int labelIndex;
     public CompilationEngine(JackTokenizer tokenizer, String xmlPath, String vmPath) throws IOException {
         this.tokenizer = tokenizer;
         bufferWriter = new BufferedWriter(new FileWriter(xmlPath));
         vmWriter = new VMWriter(vmPath);
         symbolTable = new SymbolTable();
+        labelIndex = 0;
+        className = "";
+        functionName = "";
     }
 
     public void compileClass() throws JackCompilerException, IOException {
@@ -84,43 +89,71 @@ public class CompilationEngine {
 
     private void compileSubroutineDec() throws JackCompilerException, IOException {
         println("<subroutineDec>");
+        String keyword = tokenizer.tokenValue();
         eat();
         if ("void".equals(tokenizer.tokenValue()) || isType(tokenizer.currentToken)) {
             eat();
         } else {
             error("void|type");
         }
+        functionName = tokenizer.tokenValue();
         eat(Token.TokenType.IDENTIFIER);
         eat("(");
         compileParameterList();
         eat(")");
-        compileSubroutineBody();
+        compileSubroutineBody(keyword);
         println("</subroutineDec>");
     }
 
-    private void compileSubroutineBody() throws JackCompilerException, IOException {
+    private void compileSubroutineBody(String keyword) throws JackCompilerException, IOException {
         println("<subroutineBody>");
         eat("{");
+        symbolTable.startSubroutine();
+        if ("method".equals(keyword)) {
+            symbolTable.define("this", className, Symbol.Kind.ARG);
+        }
         while ("var".equals(tokenizer.tokenValue())) {
             compileVarDec();
         }
+        writeFunctionBody(keyword);
         compileStatements();
         eat("}");
         println("</subroutineBody>");
     }
 
+    private void writeFunctionBody(String keyword) {
+        vmWriter.writeFunction(functionName(), symbolTable.varCount(Symbol.Kind.VAR));
+        //METHOD and CONSTRUCTOR need to load this pointer
+        if ("method".equals(keyword)){
+            //A Jack method with k arguments is compiled into a VM function that operates on k + 1 arguments.
+            // The first argument (argument number 0) always refers to the this object.
+            vmWriter.writePush(VMWriter.Segment.ARG, 0);
+            vmWriter.writePop(VMWriter.Segment.POINTER, 0);
+
+        }else if ("constructor".equals(keyword)){
+            //A Jack function or constructor with k arguments is compiled into a VM function that operates on k arguments.
+            vmWriter.writePush(VMWriter.Segment.CONST, symbolTable.varCount(Symbol.Kind.FIELD));
+            vmWriter.writeCall("Memory.alloc", 1);
+            vmWriter.writePop(VMWriter.Segment.POINTER,0);
+        }
+    }
+
     private void compileParameterList() throws JackCompilerException, IOException {
         println("<parameterList>");
         if (isType(tokenizer.currentToken)) {
+            String type = tokenizer.currentToken.value;
             eat();
+            symbolTable.define(tokenizer.identifier(), type, Symbol.Kind.ARG);
             eat(Token.TokenType.IDENTIFIER);
             while (tokenizer.symbol() == ',') {
                 eat();
                 if (isType(tokenizer.currentToken)) {
                     eat();
+                    type = tokenizer.currentToken.value;
                 } else {
                     error("type");
                 }
+                symbolTable.define(tokenizer.identifier(), type, Symbol.Kind.ARG);
                 eat(Token.TokenType.IDENTIFIER);
             }
         }
@@ -130,14 +163,20 @@ public class CompilationEngine {
     private void compileVarDec() throws JackCompilerException, IOException {
         println("<varDec>");
         eat("var");
+        String type = "";
         if (isType(tokenizer.currentToken)) {
+            type = tokenizer.tokenValue();
             eat();
         } else {
             error("type");
         }
+        String name = tokenizer.tokenValue();
         eat(Token.TokenType.IDENTIFIER);
+        symbolTable.define(name, type, Symbol.Kind.VAR);
         while (tokenizer.symbol() == ',') {
             eat();
+            name = tokenizer.tokenValue();
+            symbolTable.define(name, type, Symbol.Kind.VAR);
             eat(Token.TokenType.IDENTIFIER);
         }
         eat(";");
@@ -194,27 +233,57 @@ public class CompilationEngine {
     private void compileLet() throws JackCompilerException, IOException {
         println("<letStatement>");
         eat("let");
+        String varName = tokenizer.identifier();
         eat(Token.TokenType.IDENTIFIER);
+
+        boolean isArray = false;
         if (tokenizer.symbol() == '[') {
+            isArray = true;
             eat("[");
+            // push base address to stack
+            vmWriter.writePush(getSeg(symbolTable.kindOf(varName)), symbolTable.indexOf(varName));
+            // push expression value to stack
             compileExpression();
+            // base address + offset
+            vmWriter.writeArithmetic(VMWriter.Command.ADD);
             eat("]");
         }
         eat("=");
         compileExpression();
         eat(";");
+        if (isArray){
+            //*(base+offset) = expression
+            //pop expression value to temp
+            vmWriter.writePop(VMWriter.Segment.TEMP,0);
+            //pop base+index into 'that'
+            vmWriter.writePop(VMWriter.Segment.POINTER,1);
+            //pop expression value into *(base+index)
+            vmWriter.writePush(VMWriter.Segment.TEMP,0);
+            vmWriter.writePop(VMWriter.Segment.THAT,0);
+        }else {
+            //pop expression value directly
+            vmWriter.writePop(getSeg(symbolTable.kindOf(varName)), symbolTable.indexOf(varName));
+
+        }
         println("</letStatement>");
     }
 
     private void compileWhile() throws JackCompilerException, IOException {
+        String label1 = newLabel();
+        String label2 = newLabel();
         println("<whileStatement>");
+        vmWriter.writeLabel(label1);
         eat("while");
         eat("(");
         compileExpression();
         eat(")");
+        vmWriter.writeArithmetic(VMWriter.Command.NOT);
+        vmWriter.writeIf(label2);
         eat("{");
         compileStatements();
         eat("}");
+        vmWriter.writeGoto(label1);
+        vmWriter.writeLabel(label2);
         println("</whileStatement>");
     }
 
@@ -222,29 +291,38 @@ public class CompilationEngine {
         println("<returnStatement>");
         eat("return");
         if (Token.TokenType.SYMBOL.equals(tokenizer.tokenType()) && tokenizer.symbol() == ';') {
+            vmWriter.writePush(VMWriter.Segment.CONST,0);
             eat(";");
         } else {
             compileExpression();
             eat(";");
         }
+        vmWriter.writeReturn();
         println("</returnStatement>");
     }
 
     private void compileIf() throws JackCompilerException, IOException {
+        String label1 = newLabel();
+        String label2 = newLabel();
         println("<ifStatement>");
         eat("if");
         eat("(");
         compileExpression();
         eat(")");
+        vmWriter.writeArithmetic(VMWriter.Command.NOT);
+        vmWriter.writeIf(label1);
         eat("{");
         compileStatements();
         eat("}");
+        vmWriter.writeGoto(label2);
+        vmWriter.writeLabel(label1);
         if ("else".equals(tokenizer.tokenValue())) {
             eat();
             eat("{");
             compileStatements();
             eat("}");
         }
+        vmWriter.writeLabel(label2);
         println("</ifStatement>");
     }
 
@@ -305,17 +383,35 @@ public class CompilationEngine {
             vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
             eat();
             if (tokenizer.currentToken.value.equals("[")) {
+                // Start an array
                 eat("[");
+                //push array variable,base address into stack
+                vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)),symbolTable.indexOf(identifier));
                 compileExpression();
                 eat("]");
+
+                //base+offset
+                vmWriter.writeArithmetic(VMWriter.Command.ADD);
+
+                //pop into 'that' pointer
+                vmWriter.writePop(VMWriter.Segment.POINTER,1);
+                //push *(base+index) onto stack
+                vmWriter.writePush(VMWriter.Segment.THAT,0);
             } else if (tokenizer.currentToken.value.equals("(") || tokenizer.currentToken.value.equals(".")) {
                 // Case: subroutineCall
                 if (tokenizer.symbol() == '(') {
                     eat("(");
-                    compileExpressionList();
+                    // Push reference of current object this
+                    vmWriter.writePush(VMWriter.Segment.POINTER, 0);
+
+                    int argCnt = compileExpressionList() + 1;
                     eat(")");
+                    // Call subroutine
+                    vmWriter.writeCall(className + "." + identifier, argCnt);
                 } else if (tokenizer.symbol() == '.') {
+                    //(className|varName) '.' subroutineName '(' expressionList ')'
                     eat(".");
+                    String subroutineName = tokenizer.identifier();
                     eat(Token.TokenType.IDENTIFIER);
                     eat("(");
                     compileExpressionList();
@@ -329,8 +425,14 @@ public class CompilationEngine {
 
     }
 
-    private VMWriter.Segment getSeg(Symbol.Kind kindOf) {
-        return  null;
+    private VMWriter.Segment getSeg(Symbol.Kind kind) {
+        switch (kind){
+            case FIELD:return VMWriter.Segment.THIS;
+            case STATIC:return VMWriter.Segment.STATIC;
+            case VAR:return VMWriter.Segment.LOCAL;
+            case ARG:return VMWriter.Segment.ARG;
+            default:return null;
+        }
     }
 
     private boolean isUnaryOp(Token currentToken) {
@@ -339,16 +441,20 @@ public class CompilationEngine {
     }
 
 
-    public void compileExpressionList() throws JackCompilerException, IOException {
+    public int compileExpressionList() throws JackCompilerException, IOException {
+        int argCnt = 0;
         println("<expressionList>");
         if (tokenizer.symbol() != ')') {
             compileExpression();
+            argCnt++;
             while (tokenizer.symbol() == ',') {
                 eat(",");
                 compileExpression();
+                argCnt++;
             }
         }
         println("</expressionList>");
+        return argCnt;
     }
 
     private boolean isKeywordConstant(Token token) {
@@ -417,6 +523,17 @@ public class CompilationEngine {
         tokenizer.advance();
     }
 
+    private String newLabel() {
+        return "L" + labelIndex++;
+    }
+
+    private String functionName(){
+        if (!className.isEmpty() && !functionName.isEmpty()){
+            return className + "." + functionName;
+        }
+        return "";
+    }
+
     private void println(String str) throws IOException {
         bufferWriter.write(str);
         bufferWriter.newLine();
@@ -426,6 +543,7 @@ public class CompilationEngine {
     public void close() throws IOException {
         bufferWriter.close();
     }
+
 
     private void error(String str) throws JackCompilerException {
         throw new JackCompilerException("Expect token: " + str + " But meet token: " + tokenizer.currentToken.toString() + ". Pos num:" + tokenizer.pos);

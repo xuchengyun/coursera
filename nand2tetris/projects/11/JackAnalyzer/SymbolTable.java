@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class SymbolTable {
     Map<String, Symbol> classSymbolTable;
@@ -32,19 +33,35 @@ public class SymbolTable {
     }
 
     public int varCount(Symbol.Kind kind) {
-        return 0;
+        return indexMap.getOrDefault(kind, 0);
     }
 
     public Symbol.Kind kindOf(String name) {
-        return null;
+        Symbol symbol = getSymbol(name);
+        if (symbol != null) return symbol.getKind();
+        return Symbol.Kind.NONE;
     }
 
     public String typeOf(String name) {
+        Symbol symbol = getSymbol(name);
+        if (symbol != null) return symbol.getType();
         return "";
     }
 
     public int indexOf(String name) {
-        return 1;
+        Symbol symbol = getSymbol(name);
+        if (symbol != null) return symbol.getIndex();
+        return -1;
+    }
+
+    private Symbol getSymbol(String name){
+        if (classSymbolTable.containsKey(name)) {
+            return classSymbolTable.get(name);
+        }
+        if (subroutineSymbolTable.containsKey(name)) {
+            return subroutineSymbolTable.get(name);
+        }
+        return null;
     }
 
 }
