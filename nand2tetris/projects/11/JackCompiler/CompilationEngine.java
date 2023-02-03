@@ -73,6 +73,8 @@ public class CompilationEngine {
         } else {
             error("Token of Type");
         }
+        name = tokenizer.currentToken.value;
+        symbolTable.define(name, type, kind);
         eat(Token.TokenType.IDENTIFIER);
         while (tokenizer.symbol() == ',') {
             eat();
@@ -95,9 +97,13 @@ public class CompilationEngine {
      * Compiles a complete method function or constructor
      */
     private void compileSubroutineDec() throws JackCompilerException, IOException {
+        symbolTable.startSubroutine();
         println("<subroutineDec>");
         String keyword = tokenizer.tokenValue();
         eat();
+        if ("method".equals(keyword)) {
+            symbolTable.define("this", className, Symbol.Kind.ARG);
+        }
         if ("void".equals(tokenizer.tokenValue()) || isType(tokenizer.currentToken)) {
             eat();
         } else {
@@ -118,7 +124,6 @@ public class CompilationEngine {
     private void compileSubroutineBody(String keyword) throws JackCompilerException, IOException {
         println("<subroutineBody>");
         eat("{");
-        symbolTable.startSubroutine();
         if ("method".equals(keyword)) {
             symbolTable.define("this", className, Symbol.Kind.ARG);
         }
@@ -242,22 +247,49 @@ public class CompilationEngine {
     private void compileDo() throws JackCompilerException, IOException {
         println("<doStatement>");
         eat("do");
+        String identifier = tokenizer.identifier();
         eat(Token.TokenType.IDENTIFIER);
+        // Case: subroutineCall
         if (tokenizer.symbol() == '(') {
+            // subroutineName'('expressionList')' this is method call
             eat("(");
-            compileExpressionList();
+            // Push reference of current object this
+            vmWriter.writePush(VMWriter.Segment.POINTER, 0);
+
+            int argCnt = compileExpressionList() + 1;
             eat(")");
+            // Call subroutine
+            vmWriter.writeCall(className + "." + identifier, argCnt);
         } else if (tokenizer.symbol() == '.') {
+            // (className|varName) '.' subroutineName '(' expressionList ')' this is function call
             eat(".");
+            String functionName = tokenizer.identifier();
+            String type = symbolTable.typeOf(identifier);
+            int argCnt = 0;
+            if ("".equals(type)) {
+                // function call eg. Main.main()
+                functionName = identifier + '.' + functionName;
+            } else {
+                // method call eg. game.run()
+                argCnt = 1;
+                //push current object directly onto stack
+                vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
+                functionName = symbolTable.typeOf(identifier) + "." + functionName;
+            }
             eat(Token.TokenType.IDENTIFIER);
             eat("(");
-            compileExpressionList();
+            argCnt += compileExpressionList();
+            //call subroutine
+            vmWriter.writeCall(functionName, argCnt);
             eat(")");
         }
         eat(";");
         vmWriter.writePop(VMWriter.Segment.TEMP, 0);
         println("</doStatement>");
     }
+
+
+
 
     /**
      * Compiles a let statement
@@ -469,8 +501,8 @@ public class CompilationEngine {
             eat(")");
         // check if it is identifier
         } else if (tokenizer.tokenType().equals(Token.TokenType.IDENTIFIER)) {
-            String identifier = tokenizer.stringVal();
-            vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
+            String identifier = tokenizer.tokenValue();
+//            vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
             eat();
             if (tokenizer.currentToken.value.equals("[")) {
                 // Start an array
@@ -489,6 +521,7 @@ public class CompilationEngine {
             } else if (tokenizer.currentToken.value.equals("(") || tokenizer.currentToken.value.equals(".")) {
                 // Case: subroutineCall
                 if (tokenizer.symbol() == '(') {
+                    // subroutineName'('expressionList')' this is method call
                     eat("(");
                     // Push reference of current object this
                     vmWriter.writePush(VMWriter.Segment.POINTER, 0);
@@ -498,14 +531,31 @@ public class CompilationEngine {
                     // Call subroutine
                     vmWriter.writeCall(className + "." + identifier, argCnt);
                 } else if (tokenizer.symbol() == '.') {
-                    //(className|varName) '.' subroutineName '(' expressionList ')'
+                    // (className|varName) '.' subroutineName '(' expressionList ')' this is function call
                     eat(".");
-                    String subroutineName = tokenizer.identifier();
+                    String functionName = tokenizer.identifier();
+                    String type = symbolTable.typeOf(identifier);
+                    int argCnt = 0;
+                    if ("".equals(type)) {
+                        // function call eg. Main.main()
+                        functionName = identifier + '.' + functionName;
+                    } else {
+                        // method call eg. game.run()
+                        argCnt = 1;
+                        //push current object directly onto stack
+                        vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
+                        functionName = symbolTable.typeOf(identifier) + "." + functionName;
+                    }
                     eat(Token.TokenType.IDENTIFIER);
                     eat("(");
-                    compileExpressionList();
+                    argCnt += compileExpressionList();
+                    //call subroutine
+                    vmWriter.writeCall(functionName, argCnt);
                     eat(")");
                 }
+            } else {
+                // This is varname
+                vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
             }
         } else {
             error("term");

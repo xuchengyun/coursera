@@ -62,8 +62,8 @@ public class VMWriter {
     }
 
     public enum Segment {
-        CONST("const"),
-        ARG("arg"),
+        CONST("constant"),
+        ARG("argument"),
         LOCAL("local"),
         STATIC("static"),
         THIS("this"),
