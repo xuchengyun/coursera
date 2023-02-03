@@ -52,6 +52,10 @@ public class CompilationEngine {
                 "method".equals(currentToken.value);
     }
 
+    /**
+     * Compile a static declaration or a field declaration
+     * classVarDec ('static'|'field') type varName (','varNAme)* ';'
+     */
     private void compileClassVarDec() throws JackCompilerException, IOException {
         println("<classVarDec>");
 
@@ -87,6 +91,9 @@ public class CompilationEngine {
                 Token.TokenType.IDENTIFIER.equals(currentToken.type);
     }
 
+    /**
+     * Compiles a complete method function or constructor
+     */
     private void compileSubroutineDec() throws JackCompilerException, IOException {
         println("<subroutineDec>");
         String keyword = tokenizer.tokenValue();
@@ -102,6 +109,9 @@ public class CompilationEngine {
         compileParameterList();
         eat(")");
         compileSubroutineBody(keyword);
+
+        // clean up function name
+        functionName = "";
         println("</subroutineDec>");
     }
 
@@ -115,13 +125,13 @@ public class CompilationEngine {
         while ("var".equals(tokenizer.tokenValue())) {
             compileVarDec();
         }
-        writeFunctionBody(keyword);
+        writeFunctionDec(keyword);
         compileStatements();
         eat("}");
         println("</subroutineBody>");
     }
 
-    private void writeFunctionBody(String keyword) {
+    private void writeFunctionDec(String keyword) {
         vmWriter.writeFunction(functionName(), symbolTable.varCount(Symbol.Kind.VAR));
         //METHOD and CONSTRUCTOR need to load this pointer
         if ("method".equals(keyword)){
@@ -138,6 +148,11 @@ public class CompilationEngine {
         }
     }
 
+    /**
+     * Compiles a (possibly empty) parameter list
+     * not including the enclosing "()"
+     * ((type varName)(',' type varName)*)?
+     */
     private void compileParameterList() throws JackCompilerException, IOException {
         println("<parameterList>");
         if (isType(tokenizer.currentToken)) {
@@ -160,6 +175,11 @@ public class CompilationEngine {
         println("</parameterList>");
     }
 
+    /**
+     * Compiles a var declaration
+     * 'var' type varName (',' varName)*;
+     * Stands for local variables
+     */
     private void compileVarDec() throws JackCompilerException, IOException {
         println("<varDec>");
         eat("var");
@@ -183,6 +203,9 @@ public class CompilationEngine {
         println("</varDec>");
     }
 
+    /**
+     * Compiles a single statement
+     */
     private void compileStatements() throws JackCompilerException, IOException {
         println("<statements>");
         while (isStatement(tokenizer.currentToken)) {
@@ -211,6 +234,11 @@ public class CompilationEngine {
         }
     }
 
+    /**
+     * Compiles a do statement
+     * 'do' subroutineCall ';'
+     * Do statement need to disregard stack top
+     */
     private void compileDo() throws JackCompilerException, IOException {
         println("<doStatement>");
         eat("do");
@@ -227,9 +255,14 @@ public class CompilationEngine {
             eat(")");
         }
         eat(";");
+        vmWriter.writePop(VMWriter.Segment.TEMP, 0);
         println("</doStatement>");
     }
 
+    /**
+     * Compiles a let statement
+     * 'let' varName ('[' ']')? '=' expression ';'
+     */
     private void compileLet() throws JackCompilerException, IOException {
         println("<letStatement>");
         eat("let");
@@ -238,6 +271,7 @@ public class CompilationEngine {
 
         boolean isArray = false;
         if (tokenizer.symbol() == '[') {
+            // let a[5] = 10;
             isArray = true;
             eat("[");
             // push base address to stack
@@ -263,11 +297,14 @@ public class CompilationEngine {
         }else {
             //pop expression value directly
             vmWriter.writePop(getSeg(symbolTable.kindOf(varName)), symbolTable.indexOf(varName));
-
         }
         println("</letStatement>");
     }
 
+    /**
+     * Compiles a while statement
+     * 'while' '(' expression ')' '{' statements '}'
+     */
     private void compileWhile() throws JackCompilerException, IOException {
         String label1 = newLabel();
         String label2 = newLabel();
@@ -291,9 +328,11 @@ public class CompilationEngine {
         println("<returnStatement>");
         eat("return");
         if (Token.TokenType.SYMBOL.equals(tokenizer.tokenType()) && tokenizer.symbol() == ';') {
+            // No expression, push 0 to stack
             vmWriter.writePush(VMWriter.Segment.CONST,0);
             eat(";");
         } else {
+            // expression, push expression to stack
             compileExpression();
             eat(";");
         }
@@ -345,13 +384,37 @@ public class CompilationEngine {
         println("<expression>");
         compileTerm();
         while (isOp(tokenizer.currentToken)) {
+            String op = "";
+            switch (tokenizer.symbol()){
+                case '+':op = "add";break;
+                case '-':op = "sub";break;
+                case '*':op = "call Math.multiply 2";break;
+                case '/':op = "call Math.divide 2";break;
+                case '<':op = "lt";break;
+                case '>':op = "gt";break;
+                case '=':op = "eq";break;
+                case '&':op = "and";break;
+                case '|':op = "or";break;
+                default:error("Unknown op!");
+            }
             eat();
             compileTerm();
+            vmWriter.write(op);
         }
         println("</expression>");
     }
 
-
+    /**
+     * Compiles a term.
+     * This routine is faced with a slight difficulty when trying to decide between some of the alternative parsing rules.
+     * Specifically, if the current token is an identifier
+     *      the routine must distinguish between a variable, an array entry and a subroutine call
+     * A single look-ahead token, which may be one of "[" "(" "." suffices to distinguish between the three possibilities
+     * Any other token is not part of this term and should not be advanced over
+     *
+     * integerConstant|stringConstant|keywordConstant|varName|varName '[' expression ']'|subroutineCall|
+     * '(' expression ')'|unaryOp term
+     */
     private void compileTerm() throws IOException, JackCompilerException {
         println("<term>");
         if (tokenizer.tokenType().equals(Token.TokenType.INT_CONST)) {
@@ -360,16 +423,42 @@ public class CompilationEngine {
             eat();
         } else if (tokenizer.tokenType().equals(Token.TokenType.STRING_CONST)) {
             // Case: stringConstant
+            String str = tokenizer.stringVal();
+            vmWriter.writePush(VMWriter.Segment.CONST,str.length());
+            vmWriter.writeCall("String.new", 1);
+
+            for (int i = 0; i < str.length(); i++){
+                vmWriter.writePush(VMWriter.Segment.CONST, str.charAt(i));
+                vmWriter.writeCall("String.appendChar",2);
+            }
             eat();
         } else if (isKeywordConstant(tokenizer.currentToken)) {
             // Case: keywordConstant
+            switch (tokenizer.tokenValue()) {
+                case "true":
+                    vmWriter.writePush(VMWriter.Segment.CONST, 1);
+                    vmWriter.writeArithmetic(VMWriter.Command.NEG);
+                    break;
+                case "false":
+                case "null":
+                    vmWriter.writePush(VMWriter.Segment.CONST, 0);
+                    break;
+                case "this":
+                    vmWriter.writePush(VMWriter.Segment.POINTER, 0);
+            }
             eat();
         } else if (isUnaryOp(tokenizer.currentToken)) {
             // Case: unaryOp term
             // unaryOp
+            char s = tokenizer.symbol();
             eat();
             // term
             compileTerm();
+            if (s == '-'){
+                vmWriter.writeArithmetic(VMWriter.Command.NEG);
+            }else {
+                vmWriter.writeArithmetic(VMWriter.Command.NOT);
+            }
         } else if (tokenizer.tokenValue().equals("(")) {
             // Case: '(' expression ')'
             // '('
@@ -378,6 +467,7 @@ public class CompilationEngine {
             compileExpression();
             // ')'
             eat(")");
+        // check if it is identifier
         } else if (tokenizer.tokenType().equals(Token.TokenType.IDENTIFIER)) {
             String identifier = tokenizer.stringVal();
             vmWriter.writePush(getSeg(symbolTable.kindOf(identifier)), symbolTable.indexOf(identifier));
@@ -392,7 +482,6 @@ public class CompilationEngine {
 
                 //base+offset
                 vmWriter.writeArithmetic(VMWriter.Command.ADD);
-
                 //pop into 'that' pointer
                 vmWriter.writePop(VMWriter.Segment.POINTER,1);
                 //push *(base+index) onto stack
@@ -431,7 +520,7 @@ public class CompilationEngine {
             case STATIC:return VMWriter.Segment.STATIC;
             case VAR:return VMWriter.Segment.LOCAL;
             case ARG:return VMWriter.Segment.ARG;
-            default:return null;
+            default: throw new IllegalArgumentException(kind + " is not invalid argument");
         }
     }
 

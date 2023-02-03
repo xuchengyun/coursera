@@ -1,15 +1,22 @@
-public class VMWriter {
-    public VMWriter(String vmPath) {
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
+public class VMWriter {
+    private final BufferedWriter bufferWriter;
+
+    public VMWriter(String vmPath) throws IOException {
+        bufferWriter = new BufferedWriter(new FileWriter(vmPath));
     }
 
     public void writePush(Segment segment, int i) {
-
+        write("push " + segment.getValue() + " " + i);
 
     }
     public void writePop(Segment segment, int i) {
-
+        write("pop " + segment.getValue() + " " + i);
     }
+
     public void writeArithmetic(Command command) {
         if (command == null) {
             throw new IllegalArgumentException("command should not be null");
@@ -17,7 +24,13 @@ public class VMWriter {
         write(command.getValue());
     }
 
-    private void write(String value) {
+    public void write(String str) {
+        try {
+            bufferWriter.write(str);
+            bufferWriter.newLine();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void writeLabel(String label) {
@@ -29,11 +42,11 @@ public class VMWriter {
     public void writeIf(String label) {
         write("if-goto " + label);
     }
-    public void writeCall(String s, int i) {
-
+    public void writeCall(String name, int nArgs) {
+        write("call " + name + " " + nArgs);
     }
     public void writeFunction(String name,int nLocals ) {
-
+        write("function " + name + " " + nLocals);
     }
 
     public void writeReturn() {
@@ -41,18 +54,29 @@ public class VMWriter {
     }
 
     public void close() {
-
+        try {
+            bufferWriter.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public enum Segment {
-        CONST,
-        ARG,
-        LOCAL,
-        STATIC,
-        THIS,
-        THAT,
-        POINTER,
-        TEMP
+        CONST("const"),
+        ARG("arg"),
+        LOCAL("local"),
+        STATIC("static"),
+        THIS("this"),
+        THAT("that"),
+        POINTER("pointer"),
+        TEMP("temp");
+        private final String value;
+        Segment(String value) {
+            this.value = value;
+        }
+        public String getValue() {
+            return this.value;
+        }
     }
 
     public enum Command {
