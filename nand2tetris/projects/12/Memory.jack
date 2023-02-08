@@ -23,8 +23,6 @@ class Memory {
         let freeList[0] = 0; // next
         let freeList[1] = 14336 - 2; // length
         let endBLock = null;
-        do Output.moveCursor(0, 5);
-
         return;
     }
 
@@ -60,9 +58,6 @@ class Memory {
         let block = curList + 2 + curList[1];
         let block[0] = 0;
         let block[1] = size;
-        do Output.printInt(block);
-        do Output.println();
-
         return block + 2;
     }
 
