@@ -10,25 +10,84 @@
  */ 
 class Memory {
 
+    static Array ram;
+    static Array heap;
+    static Array freeList;
+    static Array endBLock;
+
     /** Initializes the class. */
     function void init() {
+        let ram = 0;
+        let heap = 2048;
+        let freeList = 2048;
+        let freeList[0] = 0; // next
+        let freeList[1] = 14336 - 2; // length
+        let endBLock = null;
+        do Output.moveCursor(0, 5);
+
+        return;
     }
 
+   // heap[addr - 1] head[addr - 2]
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
+        var Array curList, block;
+        var int tmpSize;
+        let curList = freeList;
+        let tmpSize = size + 2;
+
+        while (curList[1] < tmpSize) {
+            // next addr
+            if (curList[0] = 0) {
+                do Sys.error(5);
+                return 0;
+            }
+            let curList = curList[0];
+        }
+        let curList[1] = curList[1] - tmpSize;
+        let block = curList + 2 + curList[1];
+        let block[0] = 0;
+        let block[1] = size;
+        do Output.printInt(block);
+        do Output.println();
+
+        return block + 2;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
+        var int next, len;
+        var Array block;
+        let block = o - 2;
+        let next = o - 2;
+        if (endBLock = null) {
+            let endBLock = block;
+            let endBLock[0] = 0;
+            let freeList[0] = next;
+        } else {
+            let endBLock[0] = next;
+            let endBLock = block;
+            do Memory.deFrag();
+        }
+        return;
     }    
+
+    // TODO
+    function void deFrag() {
+        return;
+    }
 }
+
