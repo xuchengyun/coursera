@@ -146,4 +146,9 @@ class Math {
     function boolean bit(int x, int j){
         return ~((x & twoToThe[j]) = 0);
     }
+
+    function int twoToThe(int i){
+        return twoToThe[i];
+    }
+
 }
