@@ -6,11 +6,11 @@
 /**
  * A library of functions for writing text on the screen.
  * The Hack physical screen consists of 512 rows of 256 pixels each.
- * The library uses a fixed font, in which each character is displayed 
- * within a frame which is 11 pixels high (including 1 pixel for inter-line 
+ * The library uses a fixed font, in which each character is displayed
+ * within a frame which is 11 pixels high (including 1 pixel for inter-line
  * spacing) and 8 pixels wide (including 2 pixels for inter-character spacing).
  * The resulting grid accommodates 23 rows (indexed 0..22, top to bottom)
- * of 64 characters each (indexed 0..63, left to right). The top left 
+ * of 64 characters each (indexed 0..63, left to right). The top left
  * character position on the screen is indexed (0,0). A cursor, implemented
  * as a small filled square, indicates where the next character will be displayed.
  */
@@ -18,9 +18,22 @@ class Output {
 
     // Character map for displaying characters
     static Array charMaps; 
+    
+    static int cursor_x, cursor_y;
+    
+    static Array screen;
+    static Array charMasks;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let screen = 16384;
+        let cursor_x = 0;
+        let cursor_y = 0;
+        let charMasks = Array.new(2);
+        let charMasks[0] = 255;
+        let charMasks[1] = -1 & 255;
+        do Output.initMap();
+        return;
     }
 
     // Initializes the character map array
@@ -137,15 +150,15 @@ class Output {
         do Output.create(125,7,12,12,12,56,12,12,12,7,0,0);    // }
         do Output.create(126,38,45,25,0,0,0,0,0,0,0,0);        // ~
 
-	return;
+	    return;
     }
 
     // Creates the character map array of the given character index, using the given values.
     function void create(int index, int a, int b, int c, int d, int e,
                          int f, int g, int h, int i, int j, int k) {
-	var Array map;
+	    var Array map;
 
-	let map = Array.new(11);
+        let map = Array.new(11);
         let charMaps[index] = map;
 
         let map[0] = a;
@@ -176,28 +189,111 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        let cursor_x = j;
+        let cursor_y = i;
+        return;
     }
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
+        var Array map;
+        var int address;
+        var int mask;
+        var int bitmap;
+        var int i;
+        
+        // Get the character bitmap
+        let map = Output.getMap(c);
+        let address = (cursor_y * 11 * 32) + (cursor_x/2);
+        let mask = cursor_x & 1;
+        
+        // Print the character
+        let i = 0;
+        while( i < 11 ) {
+            let bitmap = map[i];
+            if( mask = 1 ) {
+                let bitmap = bitmap * 256;
+            }
+            let screen[address] = screen[address] & charMasks[mask] | bitmap;
+            let address = address + 32;
+            let i = i + 1;
+        }
+        
+        // Advance the cursor
+        if( cursor_x = 63 ) {
+            do Output.println();
+        }
+        else {
+            let cursor_x = cursor_x + 1;
+        }
+        
+        return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i;
+        let i = 0;
+        while( i < s.length() ) {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        var String s;
+        let s = String.new(10);
+        do s.setInt(i);
+        do Output.printString(s);
+        do s.dispose();
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let cursor_x = 0;
+        if( cursor_y < 22 ) {
+            let cursor_y = cursor_y + 1;
+        }
+        else {
+            do Output.scroll();
+        }
+        return;
+    }
+
+    /** Scroll the screen up one line */
+    function void scroll() {
+        // Just reset to top left corner for now.
+        let cursor_x = 0;
+        let cursor_y = 0;
+
+        //var int address;
+
+        //let address = 0;
+        //while( address < 255 ) {
+        //    let screen[address+32] = screen[address];
+        //    let address = address + 1;
+        //}
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if( cursor_x = 0 ) {
+            if( ~(cursor_y = 0) ) {
+                let cursor_x = 63;
+                let cursor_y = cursor_y - 1;
+            }
+        }
+        else {
+            let cursor_x = cursor_x - 1;
+        }
+        
+        return;
     }
 }
