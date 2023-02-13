@@ -297,7 +297,7 @@ class Output {
         return;
     }
 
-    /** and erases the character displayed there. */
+    /** Erases the character displayed there. */
     function void erase() {
         var int mask, i, address;
         let mask = cursor_x & 1;
@@ -308,6 +308,24 @@ class Output {
                 let screen[address] = screen[address] & 255;
             }  else {
                 let screen[address] = screen[address] & (~255);
+            }
+            let address = address + 32;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /** Display current cursor. */
+    function void displayCursor() {
+        var int mask, i, address;
+        let mask = cursor_x & 1;
+        let i = 0;
+        let address = (cursor_y * 11 * 32) + (cursor_x / 2);
+        while( i < 11 ) {
+            if( mask = 1 ) {
+                let screen[address] = screen[address] | (~255);
+            }  else {
+                let screen[address] = screen[address] | 255;
             }
             let address = address + 32;
             let i = i + 1;

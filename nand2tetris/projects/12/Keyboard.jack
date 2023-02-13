@@ -7,9 +7,12 @@
  * A library for handling user input from the keyboard.
  */
 class Keyboard {
+    static int keyboardAddr;
 
     /** Initializes the keyboard. */
     function void init() {
+        let keyboardAddr = 24576;
+        return;
     } 
 
     /**
@@ -33,6 +36,7 @@ class Keyboard {
      * F1 - F12 = 141 - 152
      */
     function char keyPressed() {
+        return Memory.peek(keyboardAddr);
     }
 
     /**								
@@ -41,6 +45,15 @@ class Keyboard {
      * of the pressed key.
      */
     function char readChar() {
+        var char c;
+
+        do Output.displayCursor();
+        // waits until a key is pressed
+        while (Keyboard.keyPressed() = 0) {}
+        let c = Keyboard.keyPressed();
+        while (~(Keyboard.keyPressed() = 0)) {}
+        do Output.printChar(c);
+        return c;
     }
 
     /**								
@@ -49,6 +62,32 @@ class Keyboard {
      * and returns its value. Also handles user backspaces.
      */
     function String readLine(String message) {
+        var String str;
+        var char c;
+        
+        do Output.printString(message);
+        let str = String.new(50);
+        while (true) {
+            let c = Keyboard.readChar();
+            if (c = String.newLine()) {
+                do Output.erase();
+                do Output.backSpace();
+                do Output.erase();
+                do Output.println();
+                return str;
+            } else {
+                if (c = String.backSpace()) {
+                    do Output.erase();
+                    do Output.backSpace();
+                    do Output.erase();
+                    do Output.backSpace();
+                    do str.eraseLastChar();
+                } else {
+                    do str.appendChar(c);
+                }
+            }
+        }
+        return str;
     }   
 
     /**								
@@ -58,5 +97,9 @@ class Keyboard {
      * entered text is detected). Also handles user backspaces. 
      */
     function int readInt(String message) {
+        var String str;
+        
+        let str = Keyboard.readLine(message);
+        return str.intValue();
     }
 }
