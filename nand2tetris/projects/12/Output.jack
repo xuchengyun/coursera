@@ -22,16 +22,12 @@ class Output {
     static int cursor_x, cursor_y;
     
     static Array screen;
-    static Array charMasks;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
         let screen = 16384;
         let cursor_x = 0;
         let cursor_y = 0;
-        let charMasks = Array.new(2);
-        let charMasks[0] = 255;
-        let charMasks[1] = -1 & 255;
         do Output.initMap();
         return;
     }
@@ -48,6 +44,7 @@ class Output {
         // Assigns the bitmap for each character in the charachter set.
         // The first parameter is the character index, the next 11 numbers
         // are the values of each row in the frame that represents this character.
+        // the bit values are inverted because it's starting from left to right
         do Output.create(32,0,0,0,0,0,0,0,0,0,0,0);          //
         do Output.create(33,12,30,30,30,12,12,0,12,12,0,0);  // !
         do Output.create(34,54,54,20,0,0,0,0,0,0,0,0);       // "
@@ -84,7 +81,7 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        do Output.create(65,12,30,51,51,63,51,51,51,51,0,0); // A
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -191,6 +188,7 @@ class Output {
     function void moveCursor(int i, int j) {
         let cursor_x = j;
         let cursor_y = i;
+        do Output.erase();
         return;
     }
 
@@ -205,7 +203,7 @@ class Output {
         
         // Get the character bitmap
         let map = Output.getMap(c);
-        let address = (cursor_y * 11 * 32) + (cursor_x/2);
+        let address = (cursor_y * 11 * 32) + (cursor_x / 2);
         let mask = cursor_x & 1;
         
         // Print the character
@@ -214,8 +212,10 @@ class Output {
             let bitmap = map[i];
             if( mask = 1 ) {
                 let bitmap = bitmap * 256;
+                let screen[address] = screen[address] & 255| bitmap;
+            } else {
+                let screen[address] = screen[address] & (~255) | bitmap;
             }
-            let screen[address] = screen[address] & charMasks[mask] | bitmap;
             let address = address + 32;
             let i = i + 1;
         }
@@ -294,6 +294,24 @@ class Output {
             let cursor_x = cursor_x - 1;
         }
         
+        return;
+    }
+
+    /** and erases the character displayed there. */
+    function void erase() {
+        var int mask, i, address;
+        let mask = cursor_x & 1;
+        let i = 0;
+        let address = (cursor_y * 11 * 32) + (cursor_x / 2);
+        while( i < 11 ) {
+            if( mask = 1 ) {
+                let screen[address] = screen[address] & 255;
+            }  else {
+                let screen[address] = screen[address] & (~255);
+            }
+            let address = address + 32;
+            let i = i + 1;
+        }
         return;
     }
 }
