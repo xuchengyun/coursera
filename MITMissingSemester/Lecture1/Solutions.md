@@ -1,5 +1,5 @@
 # Solutions of Lecture 1
-
+https://missing.csail.mit.edu/2020/course-shell/
 1. Create a new directory called `missing` under `/tmp`.
 
    **Solution:** We can use `mkdir /tmp/missing` or `mkdir -p /tmp/missing`.
