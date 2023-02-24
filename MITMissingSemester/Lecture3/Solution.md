@@ -29,3 +29,16 @@
 1. (Advanced) Convert XML to JSON ([example file](/2020/files/example-data.xml))
    using Vim macros. Try to do this on your own, but you can look at the
    [macros](#macros) section above if you get stuck.
+   $ wget https://missing.csail.mit.edu/2020/files/example-data.xml
+   $ cp example-data.xml example-data.json
+   $ vim example-data.json
+    ```agsl
+    :s/<people>/{\r\t"people": {/g
+    j
+    :s/<person>/\t\t"person": [\r\t\t\t{/g
+    :%s/  <person>/\t\t\t{
+    :%s/    <name>\(.*\)<\/name>/\t\t\t\t"name": "\-1",/g
+    :%s/    <email>\(.*\)<\/email>/\t\t\t\t"email": "\-1"/g
+    :%s/  <\/person>/\t\t\t},
+    Gddlxo<Tab><Tab>]<Enter><Tab>}<Enter>}
+    ```
